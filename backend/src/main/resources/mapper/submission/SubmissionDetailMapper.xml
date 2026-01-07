@@ -1,0 +1,72 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="com.problemio.submission.mapper.SubmissionDetailMapper">
+
+    <resultMap id="SubmissionDetailResultMap" type="com.problemio.submission.domain.SubmissionDetail">
+        <id property="id" column="id"/>
+        <result property="submissionId" column="submission_id"/>
+        <result property="questionId" column="question_id"/>
+        <result property="userAnswer" column="user_answer"/>
+        <result property="correct" column="is_correct"/>
+    </resultMap>
+
+    <insert id="insertSubmissionDetail" parameterType="com.problemio.submission.domain.SubmissionDetail" useGeneratedKeys="true" keyProperty="id">
+        <!-- user_answer 컬럼은 NOT NULL 제약이 있어 빈 문자열을 넣어준다 (사용자 입력값은 저장하지 않음) -->
+        INSERT INTO submission_details (submission_id, question_id, user_answer, is_correct)
+        VALUES (#{submissionId}, #{questionId}, '', #{correct})
+        ON DUPLICATE KEY UPDATE
+            user_answer = VALUES(user_answer),
+            is_correct = VALUES(is_correct)
+    </insert>
+
+    <insert id="insertSubmissionDetails">
+        INSERT INTO submission_details (submission_id, question_id, user_answer, is_correct)
+        VALUES
+        <foreach collection="details" item="d" separator=",">
+            (#{d.submissionId}, #{d.questionId}, '', #{d.correct})
+        </foreach>
+    </insert>
+
+    <select id="findBySubmissionId" resultMap="SubmissionDetailResultMap">
+        SELECT * FROM submission_details WHERE submission_id = #{submissionId}
+    </select>
+
+    <select id="countBySubmissionId" resultType="int">
+        SELECT COUNT(*) FROM submission_details WHERE submission_id = #{submissionId}
+    </select>
+
+    <select id="countBySubmissionIdForUpdate" resultType="int">
+        SELECT COUNT(*) FROM submission_details WHERE submission_id = #{submissionId} FOR UPDATE
+    </select>
+
+    <select id="countCorrectBySubmissionId" resultType="int">
+        SELECT COUNT(*) FROM submission_details WHERE submission_id = #{submissionId} AND is_correct = true
+    </select>
+
+    <select id="findBySubmissionIdAndQuestionId" resultMap="SubmissionDetailResultMap">
+        SELECT * FROM submission_details WHERE submission_id = #{submissionId} AND question_id = #{questionId}
+    </select>
+
+    <delete id="deleteBySubmissionIdAndQuestionId">
+        DELETE FROM submission_details WHERE submission_id = #{submissionId} AND question_id = #{questionId}
+    </delete>
+
+    <delete id="deleteByQuestionIds">
+        DELETE FROM submission_details
+        WHERE question_id IN
+        <foreach collection="questionIds" item="id" open="(" separator="," close=")">
+            #{id}
+        </foreach>
+    </delete>
+
+    <delete id="deleteBySubmissionIds">
+        DELETE FROM submission_details
+        WHERE submission_id IN
+        <foreach collection="submissionIds" item="id" open="(" separator="," close=")">
+            #{id}
+        </foreach>
+    </delete>
+
+</mapper>

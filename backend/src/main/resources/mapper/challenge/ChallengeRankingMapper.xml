@@ -1,0 +1,153 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="com.problemio.challenge.mapper.ChallengeRankingMapper">
+
+    <resultMap id="ChallengeRankingResultMap" type="com.problemio.challenge.dto.ChallengeRankingResponse">
+        <result property="challengeId" column="challenge_id"/>
+        <result property="userId" column="user_id"/>
+        <result property="nickname" column="nickname"/>
+        <result property="profileImageUrl" column="profile_image_url"/>
+        <result property="ranking" column="ranking"/>
+        <result property="score" column="score"/>
+        <result property="playTime" column="play_time"/>
+        <result property="challengeType" column="challenge_type"/>
+        <result property="recordedAt" column="created_at"/>
+    </resultMap>
+
+    <insert id="insertRanking" parameterType="com.problemio.challenge.domain.ChallengeRanking">
+        INSERT INTO challenge_rankings (
+            challenge_id, user_id, ranking, score, play_time, created_at
+        ) VALUES (
+            #{challengeId}, #{userId}, #{ranking}, #{score}, #{playTime}, #{createdAt}
+        )
+    </insert>
+
+    <insert id="insertRankings" parameterType="java.util.List">
+        INSERT INTO challenge_rankings (
+            challenge_id, user_id, ranking, score, play_time, created_at
+        ) VALUES
+        <foreach collection="rankings" item="item" separator=",">
+            (#{item.challengeId}, #{item.userId}, #{item.ranking}, #{item.score}, #{item.playTime}, #{item.createdAt})
+        </foreach>
+    </insert>
+
+    <!-- findRankingsByChallengeId removed -->
+    
+    <delete id="deleteRankingsByChallengeId">
+        DELETE FROM challenge_rankings WHERE challenge_id = #{challengeId}
+    </delete>
+
+    <select id="existsByChallengeId" resultType="boolean">
+        SELECT EXISTS(SELECT 1 FROM challenge_rankings WHERE challenge_id = #{challengeId})
+    </select>
+
+    <select id="challengeTotalRanking" resultMap="ChallengeRankingResultMap">
+        SELECT
+            cr.challenge_id,
+            cr.user_id,
+            u.nickname,
+            u.profile_image_url,
+            cr.ranking,
+            cr.score,
+            cr.play_time,
+            c.challenge_type,
+            cr.created_at
+        FROM challenge_rankings cr
+        JOIN users u ON u.id = cr.user_id
+        JOIN challenges c ON c.id = cr.challenge_id
+        WHERE cr.challenge_id = #{challengeId}
+        AND u.is_deleted = 0
+        ORDER BY cr.ranking ASC
+        LIMIT #{limit}
+    </select>
+
+    <select id="loginUserRanking" resultMap="ChallengeRankingResultMap">
+        SELECT
+            cr.challenge_id,
+            cr.user_id,
+            u.nickname,
+            u.profile_image_url,
+            cr.ranking,
+            cr.score,
+            cr.play_time,
+            c.challenge_type,
+            cr.created_at
+        FROM challenge_rankings cr
+        JOIN users u ON u.id = cr.user_id
+        JOIN challenges c ON c.id = cr.challenge_id
+        WHERE cr.challenge_id = #{challengeId}
+        AND cr.user_id = #{userId}
+        AND u.is_deleted = 0
+    </select>
+
+    <!-- ResultMap for Submission -->
+    <resultMap id="ChallengeSubmissionResultMap" type="com.problemio.submission.domain.Submission">
+        <id property="id" column="id"/>
+        <result property="quizId" column="quiz_id"/>
+        <result property="userId" column="user_id"/>
+        <result property="totalQuestions" column="total_questions"/>
+        <result property="correctCount" column="correct_count"/>
+        <result property="submittedAt" column="submitted_at"/>
+        <result property="challengeId" column="challenge_id"/>
+        <result property="playTime" column="play_time"/>
+    </resultMap>
+
+    <!-- Submission Queries -->
+    <select id="findSubmissionsByChallengeId" resultMap="ChallengeSubmissionResultMap">
+        SELECT * FROM submissions 
+        WHERE challenge_id = #{challengeId} 
+        AND submitted_at IS NOT NULL
+    </select>
+
+    <select id="findSubmissionByUserIdAndChallengeId" resultMap="ChallengeSubmissionResultMap">
+        SELECT * FROM submissions 
+        WHERE user_id = #{userId} AND challenge_id = #{challengeId}
+        AND submitted_at IS NOT NULL
+        ORDER BY correct_count DESC, play_time ASC, submitted_at ASC
+        LIMIT 1
+    </select>
+
+    <!-- Live Ranking (Unique User) -->
+    <select id="getLiveRanking" resultType="int">
+        SELECT COUNT(DISTINCT user_id) + 1
+        FROM submissions
+        WHERE challenge_id = #{challengeId}
+          AND submitted_at IS NOT NULL
+          AND (correct_count > #{correctCount}
+               OR (correct_count = #{correctCount} AND play_time &lt; #{playTime})
+               OR (correct_count = #{correctCount} AND play_time = #{playTime} AND submitted_at &lt; #{submittedAt}))
+    </select>
+
+    <select id="findLiveTopRankingsByChallengeId" resultType="com.problemio.challenge.dto.ChallengeRankingResponse">
+        SELECT
+            challengeId,
+            userId,
+            nickname,
+            profileImageUrl,
+            score,
+            playTime,
+            recordedAt,
+            RANK() OVER (ORDER BY score DESC, playTime ASC, recordedAt ASC) AS ranking
+        FROM (
+            SELECT
+                s.challenge_id AS challengeId,
+                s.user_id AS userId,
+                u.nickname,
+                u.profile_image_url AS profileImageUrl,
+                s.correct_count AS score,
+                s.play_time AS playTime,
+                s.submitted_at AS recordedAt,
+                ROW_NUMBER() OVER (PARTITION BY s.user_id ORDER BY s.correct_count DESC, s.play_time ASC, s.submitted_at ASC) as rn
+            FROM submissions s
+            JOIN users u ON u.id = s.user_id
+            WHERE s.challenge_id = #{challengeId}
+            AND s.submitted_at IS NOT NULL
+            AND u.is_deleted = 0
+        ) sub
+        WHERE rn = 1
+        LIMIT #{limit}
+    </select>
+
+</mapper>

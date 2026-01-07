@@ -1,0 +1,235 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="com.problemio.quiz.mapper.QuizMapper">
+
+    <resultMap id="QuizResultMap" type="com.problemio.quiz.domain.Quiz">
+        <id property="id" column="id"/>
+        <result property="userId" column="user_id"/>
+        <result property="title" column="title"/>
+        <result property="description" column="description"/>
+        <result property="thumbnailUrl" column="thumbnail_url"/>
+        <result property="isPublic" column="is_public"/>
+        <result property="likeCount" column="like_count"/>
+        <result property="playCount" column="play_count"/>
+        <result property="isHidden" column="is_hidden"/>
+        <result property="createdAt" column="created_at"/>
+        <result property="updatedAt" column="updated_at"/>
+    </resultMap>
+
+    <insert id="insertQuiz" parameterType="com.problemio.quiz.domain.Quiz" useGeneratedKeys="true" keyProperty="id">
+        INSERT INTO quizzes (
+            user_id, title, description, thumbnail_url, is_public, like_count, play_count, is_hidden, created_at, updated_at
+        ) VALUES (
+            #{userId}, #{title}, #{description}, #{thumbnailUrl}, #{isPublic}, #{likeCount}, #{playCount}, #{isHidden}, #{createdAt}, #{updatedAt}
+        )
+    </insert>
+
+    <update id="updateQuiz" parameterType="com.problemio.quiz.domain.Quiz">
+        UPDATE quizzes
+        SET
+            title = #{title},
+            description = #{description},
+            thumbnail_url = #{thumbnailUrl},
+            is_public = #{isPublic},
+            is_hidden = #{isHidden},
+            updated_at = #{updatedAt}
+        WHERE id = #{id}
+    </update>
+
+    <delete id="deleteQuiz">
+        DELETE FROM quizzes WHERE id = #{id}
+    </delete>
+
+    <select id="findById" resultMap="QuizResultMap">
+        SELECT
+            q.*,
+            (SELECT COUNT(*)
+             FROM quiz_likes l
+             JOIN users ul ON ul.id = l.user_id
+             WHERE l.quiz_id = q.id
+               AND ul.is_deleted = 0) AS like_count
+        FROM quizzes q
+        JOIN users u ON u.id = q.user_id
+        WHERE q.id = #{id}
+          AND u.is_deleted = 0
+    </select>
+
+    <select id="findPublicQuizzes" resultMap="QuizResultMap">
+        SELECT
+            q.*,
+            (SELECT COUNT(*)
+             FROM quiz_likes l
+             JOIN users ul ON ul.id = l.user_id
+             WHERE l.quiz_id = q.id
+               AND ul.is_deleted = 0) AS like_count
+        FROM quizzes q
+        JOIN users u ON u.id = q.user_id
+        WHERE q.is_public = TRUE
+          AND q.is_hidden = 0
+          AND u.is_deleted = 0
+        ORDER BY q.created_at DESC
+    </select>
+
+    <select id="findQuizzesByUserId" resultMap="QuizResultMap">
+        SELECT
+            q.*,
+            (SELECT COUNT(*)
+             FROM quiz_likes l
+             JOIN users ul ON ul.id = l.user_id
+             WHERE l.quiz_id = q.id
+               AND ul.is_deleted = 0) AS like_count
+        FROM quizzes q
+        JOIN users u ON u.id = q.user_id
+        WHERE q.user_id = #{userId}
+          AND u.is_deleted = 0
+        ORDER BY q.created_at DESC
+    </select>
+
+    <update id="incrementPlayCount">
+        UPDATE quizzes SET play_count = play_count + 1 WHERE id = #{id}
+    </update>
+
+    <update id="incrementLikeCount">
+        UPDATE quizzes SET like_count = like_count + 1 WHERE id = #{id}
+    </update>
+
+    <update id="decrementLikeCount">
+        UPDATE quizzes SET like_count = CASE WHEN like_count > 0 THEN like_count - 1 ELSE 0 END WHERE id = #{id}
+    </update>
+
+    <select id="searchQuizzes" resultMap="QuizResultMap">
+        SELECT
+            q.*,
+            (SELECT COUNT(*)
+             FROM quiz_likes l
+             JOIN users ul ON ul.id = l.user_id
+             WHERE l.quiz_id = q.id
+               AND ul.is_deleted = 0) AS like_count
+        FROM quizzes q
+        JOIN users u ON u.id = q.user_id
+        WHERE q.is_public = TRUE
+          AND q.is_hidden = 0
+          AND u.is_deleted = 0
+        <if test="keyword != null and keyword != ''">
+            AND (q.title LIKE CONCAT('%', #{keyword}, '%')
+                 OR q.description LIKE CONCAT('%', #{keyword}, '%'))
+        </if>
+        <choose>
+            <when test="sort == 'popular'">
+                ORDER BY like_count DESC, q.play_count DESC, q.created_at DESC
+            </when>
+            <when test="sort == 'views'">
+                ORDER BY q.play_count DESC, like_count DESC, q.created_at DESC
+            </when>
+            <otherwise>
+                ORDER BY q.created_at DESC
+            </otherwise>
+        </choose>
+        LIMIT #{size} OFFSET #{offset}
+    </select>
+
+    <select id="countQuizzes" resultType="int">
+        SELECT COUNT(*)
+        FROM quizzes q
+        JOIN users u ON u.id = q.user_id
+        WHERE q.is_public = TRUE
+          AND q.is_hidden = 0
+          AND u.is_deleted = 0
+        <if test="keyword != null and keyword != ''">
+            AND (q.title LIKE CONCAT('%', #{keyword}, '%')
+                 OR q.description LIKE CONCAT('%', #{keyword}, '%'))
+        </if>
+    </select>
+
+    <select id="findUserIdByQuizId" parameterType="long" resultType="long">
+        SELECT q.user_id
+        FROM quizzes q
+        JOIN users u ON u.id = q.user_id
+        WHERE q.id = #{id}
+          AND u.is_deleted = 0
+    </select>
+
+    <!-- 내가 팔로우한 유저들 퀴즈 목록 조회용 -->
+    <select id="findQuizzesOfFollowings"
+            parameterType="map"
+            resultType="com.problemio.quiz.dto.QuizSummaryDto">
+        SELECT
+        q.id            AS id,
+        q.title         AS title,
+        q.description   AS description,
+        q.thumbnail_url AS thumbnailUrl,
+        (SELECT COUNT(*)
+         FROM quiz_likes l
+         JOIN users ul ON ul.id = l.user_id
+         WHERE l.quiz_id = q.id
+           AND ul.is_deleted = 0) AS likeCount,
+        q.play_count    AS playCount
+        FROM quizzes q
+        JOIN follows f ON f.following_id = q.user_id   <!-- 내가 팔로우한 사람 = 퀴즈 작성자 -->
+        JOIN users u ON u.id = q.user_id
+        WHERE f.follower_id = #{userId}
+        AND q.is_public = TRUE
+        AND q.is_hidden = 0
+        AND u.is_deleted = 0
+        ORDER BY q.created_at DESC
+        LIMIT #{limit} OFFSET #{offset}
+    </select>
+
+    <!-- 내가 좋아요한 퀴즈 목록 -->
+    <select id="findLikedQuizzesByUser"
+            parameterType="map"
+            resultType="com.problemio.quiz.dto.QuizSummaryDto">
+        SELECT
+            q.id            AS id,
+            q.title         AS title,
+            q.description   AS description,
+            q.thumbnail_url AS thumbnailUrl,
+            (SELECT COUNT(*)
+             FROM quiz_likes l2
+             JOIN users ul ON ul.id = l2.user_id
+             WHERE l2.quiz_id = q.id
+               AND ul.is_deleted = 0) AS likeCount,
+            q.play_count    AS playCount
+        FROM quiz_likes l
+        JOIN quizzes q ON q.id = l.quiz_id
+        JOIN users u ON u.id = q.user_id
+        WHERE l.user_id = #{userId}
+          AND q.is_public = TRUE
+          AND q.is_hidden = 0
+          AND u.is_deleted = 0
+        ORDER BY l.created_at DESC
+            LIMIT #{limit} OFFSET #{offset}
+    </select>
+    <!-- 관리자용 모든 퀴즈 조회 (숨김 포함) -->
+    <select id="findAdminQuizzes" resultMap="QuizResultMap">
+        SELECT
+            q.*,
+            (SELECT COUNT(*)
+             FROM quiz_likes l
+             JOIN users ul ON ul.id = l.user_id
+             WHERE l.quiz_id = q.id
+               AND ul.is_deleted = 0) AS like_count
+        FROM quizzes q
+        JOIN users u ON u.id = q.user_id
+        WHERE u.is_deleted = 0
+        <if test="keyword != null and keyword != ''">
+            AND (q.title LIKE CONCAT('%', #{keyword}, '%')
+                 OR q.description LIKE CONCAT('%', #{keyword}, '%'))
+        </if>
+        ORDER BY q.created_at DESC
+        LIMIT #{size} OFFSET #{offset}
+    </select>
+
+    <select id="countAdminQuizzes" resultType="int">
+        SELECT COUNT(*)
+        FROM quizzes q
+        JOIN users u ON u.id = q.user_id
+        WHERE u.is_deleted = 0
+        <if test="keyword != null and keyword != ''">
+            AND (q.title LIKE CONCAT('%', #{keyword}, '%')
+                 OR q.description LIKE CONCAT('%', #{keyword}, '%'))
+        </if>
+    </select>
+</mapper>

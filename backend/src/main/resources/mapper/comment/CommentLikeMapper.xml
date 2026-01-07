@@ -1,0 +1,57 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper
+        PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="com.problemio.comment.mapper.CommentLikeMapper">
+
+    <select id="exists" resultType="boolean">
+        SELECT EXISTS(
+            SELECT 1
+            FROM comment_likes
+            WHERE user_id = #{userId}
+              AND comment_id = #{commentId}
+        )
+    </select>
+
+    <insert id="insert">
+        INSERT INTO comment_likes (user_id, comment_id)
+        VALUES (#{userId}, #{commentId})
+    </insert>
+
+    <delete id="delete">
+        DELETE FROM comment_likes
+        WHERE user_id = #{userId}
+          AND comment_id = #{commentId}
+    </delete>
+
+    <select id="findLikedCommentIds" resultType="long">
+        SELECT comment_id
+        FROM comment_likes
+        WHERE user_id = #{userId}
+          AND comment_id IN
+            <foreach collection="commentIds" item="id" open="(" separator="," close=")">
+                #{id}
+            </foreach>
+    </select>
+
+    <delete id="deleteByUserId">
+        DELETE FROM comment_likes
+        WHERE user_id = #{userId}
+    </delete>
+
+    <select id="findLikedCommentIdsByUser" resultType="long">
+        SELECT comment_id
+        FROM comment_likes
+        WHERE user_id = #{userId}
+    </select>
+
+    <delete id="deleteByCommentIds">
+        DELETE FROM comment_likes
+        WHERE comment_id IN
+        <foreach collection="commentIds" item="id" open="(" separator="," close=")">
+            #{id}
+        </foreach>
+    </delete>
+
+</mapper>

@@ -1,0 +1,29 @@
+{
+  "compilerOptions": {
+    // import.meta 허용 조건
+    "target": "ESNext",
+    "module": "ESNext",
+    "moduleResolution": "Node",
+
+    // @ 별칭
+    "baseUrl": ".",
+    "paths": {
+      "@/*": ["src/*"]
+    },
+
+    // Vite가 제공하는 타입(ImportMeta, import.meta.env 등)
+    "types": ["vite/client"],
+
+    // JS + TS 섞어서 쓸 때 옵션
+    "allowJs": true,
+    "checkJs": true
+  },
+  "include": [
+    "src/**/*.js",
+    "src/**/*.ts",
+    "src/**/*.jsx",
+    "src/**/*.tsx",
+    "src/**/*.vue"
+  ],
+  "exclude": ["node_modules", "dist"]
+}

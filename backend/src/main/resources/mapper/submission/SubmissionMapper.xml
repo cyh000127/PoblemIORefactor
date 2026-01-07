@@ -1,0 +1,81 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="com.problemio.submission.mapper.SubmissionMapper">
+
+    <resultMap id="SubmissionResultMap" type="com.problemio.submission.domain.Submission">
+        <id property="id" column="id"/>
+        <result property="quizId" column="quiz_id"/>
+        <result property="userId" column="user_id"/>
+        <result property="totalQuestions" column="total_questions"/>
+        <result property="correctCount" column="correct_count"/>
+        <result property="submittedAt" column="submitted_at"/>
+        <result property="challengeId" column="challenge_id"/>
+        <result property="playTime" column="play_time"/>
+    </resultMap>
+
+    <insert id="insertSubmission" parameterType="com.problemio.submission.domain.Submission" useGeneratedKeys="true" keyProperty="id">
+        INSERT INTO submissions (quiz_id, user_id, total_questions, correct_count, submitted_at, challenge_id, play_time)
+        VALUES (#{quizId}, #{userId}, #{totalQuestions}, #{correctCount}, #{submittedAt}, #{challengeId}, #{playTime})
+    </insert>
+
+    <update id="updateCorrectCount">
+        UPDATE submissions
+        SET correct_count = #{correctCount}
+        WHERE id = #{id}
+          AND quiz_id = #{quizId}
+    </update>
+
+    <update id="updatePlayTime">
+        UPDATE submissions
+        SET play_time = #{playTime}
+        WHERE id = #{id}
+          AND quiz_id = #{quizId}
+    </update>
+
+    <update id="updatePlayTimeNow">
+        UPDATE submissions
+        SET play_time = CASE
+                            WHEN submitted_at IS NULL THEN 0
+                            ELSE TIMESTAMPDIFF(SECOND, submitted_at, #{now})
+                                 + (MICROSECOND(#{now}) - MICROSECOND(submitted_at)) / 1000000.0
+                        END
+        WHERE id = #{id}
+          AND quiz_id = #{quizId}
+    </update>
+
+    <select id="findById" resultMap="SubmissionResultMap">
+        SELECT * FROM submissions WHERE id = #{id}
+    </select>
+
+    <select id="findByQuizId" resultMap="SubmissionResultMap">
+        SELECT * FROM submissions WHERE quiz_id = #{quizId}
+    </select>
+
+
+
+    <select id="findByUserId" resultMap="SubmissionResultMap">
+        SELECT * FROM submissions WHERE user_id = #{userId}
+    </select>
+
+    <delete id="deleteByQuizId">
+        DELETE FROM submissions WHERE quiz_id = #{quizId}
+    </delete>
+
+
+
+
+
+    <select id="findIdsByUserId" resultType="long">
+        SELECT id
+        FROM submissions
+        WHERE user_id = #{userId}
+    </select>
+
+    <delete id="deleteByUserId">
+        DELETE FROM submissions
+        WHERE user_id = #{userId}
+    </delete>
+
+</mapper>

@@ -1,0 +1,183 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="com.problemio.user.mapper.UserMapper">
+
+    <resultMap id="UserResponseMap" type="com.problemio.user.dto.UserResponse">
+        <id property="id" column="id"/>
+        <result property="email" column="email"/>
+        <result property="nickname" column="nickname"/>
+        <result property="profileImageUrl" column="profile_image_url"/>
+        <result property="statusMessage" column="status_message"/>
+        <result property="followerCount" column="follower_count"/>
+        <result property="followingCount" column="following_count"/>
+        <result property="quizCount" column="quiz_count"/>
+        <result property="isFollowedByMe" column="is_followed_by_me"/>
+        <result property="profileTheme" column="profile_theme"/>
+        <result property="avatarDecoration" column="avatar_decoration"/>
+        <result property="popoverDecoration" column="popover_decoration"/>
+        <result property="role" column="role"/>
+    </resultMap>
+
+    <!-- 유저 팝오버용 결과 매핑 -->
+    <resultMap id="UserPopoverMap" type="com.problemio.user.dto.UserPopoverResponse">
+        <id property="id" column="id"/>
+        <result property="nickname" column="nickname"/>
+        <result property="profileImageUrl" column="profile_image_url"/>
+        <result property="statusMessage" column="status_message"/>
+        <result property="profileTheme" column="profile_theme"/>
+        <result property="avatarDecoration" column="avatar_decoration"/>
+        <result property="popoverDecoration" column="popover_decoration"/>
+
+        <result property="followerCount" column="follower_count"/>
+        <result property="followingCount" column="following_count"/>
+
+        <result property="following" column="is_following"/>
+    </resultMap>
+
+    <select id="findById" resultMap="UserResponseMap">
+        SELECT id, email, nickname, profile_image_url, status_message, profile_theme, avatar_decoration, popover_decoration, role
+        FROM users
+        WHERE id = #{id} AND is_deleted = 0
+    </select>
+
+    <select id="findByIds" resultMap="UserResponseMap">
+        SELECT id, email, nickname, profile_image_url, status_message, profile_theme, avatar_decoration, popover_decoration, role
+        FROM users
+        WHERE is_deleted = 0
+          AND id IN
+            <foreach collection="ids" item="id" open="(" separator="," close=")">
+                #{id}
+            </foreach>
+    </select>
+
+    <update id="updateProfile">
+        UPDATE users
+        <set>
+            <if test="nickname != null">nickname = #{nickname},</if>
+            <if test="profileImageUrl != null">profile_image_url = #{profileImageUrl},</if>
+            <if test="statusMessage != null">status_message = #{statusMessage},</if>
+            <if test="profileTheme != null">profile_theme = #{profileTheme},</if>
+            <if test="avatarDecoration != null">avatar_decoration = #{avatarDecoration},</if>
+            <if test="popoverDecoration != null">popover_decoration = #{popoverDecoration},</if>
+            updated_at = #{updatedAt}
+        </set>
+        WHERE id = #{id}
+    </update>
+
+    <update id="updatePassword">
+        UPDATE users SET password_hash = #{passwordHash}, updated_at = #{updatedAt}
+        WHERE id = #{id}
+    </update>
+
+    <update id="deleteUser">
+        UPDATE users SET is_deleted = 1, updated_at = #{updatedAt}
+        WHERE id = #{id}
+    </update>
+
+    <update id="anonymizeCredentials">
+        UPDATE users
+        SET email = #{email},
+            nickname = #{nickname},
+            updated_at = #{updatedAt}
+        WHERE id = #{id}
+    </update>
+
+    <select id="countFollowers" resultType="int">
+        SELECT COUNT(*)
+        FROM follows f
+        JOIN users u ON u.id = f.follower_id
+        WHERE f.following_id = #{userId}
+          AND u.is_deleted = 0
+    </select>
+
+    <select id="countFollowings" resultType="int">
+        SELECT COUNT(*)
+        FROM follows f
+        JOIN users u ON u.id = f.following_id
+        WHERE f.follower_id = #{userId}
+          AND u.is_deleted = 0
+    </select>
+
+    <select id="countCreatedQuizzes" resultType="int">
+        SELECT COUNT(*) FROM quizzes WHERE user_id = #{userId} AND is_public = 1
+    </select>
+
+<!--  닉네임 중복 확인  -->
+    <select id="existsByNickname" resultType="int">
+        SELECT COUNT(*)
+        FROM users
+        WHERE nickname = #{nickname} AND is_deleted = 0
+    </select>
+
+
+    <select id="findUserPopover" resultMap="UserPopoverMap">
+        SELECT
+            u.id,
+            u.nickname,
+            u.profile_image_url,
+            u.status_message,
+            u.profile_theme,
+            u.avatar_decoration,
+            u.popover_decoration,
+            (SELECT COUNT(*)
+             FROM follows f1
+             JOIN users uf1 ON uf1.id = f1.follower_id
+             WHERE f1.following_id = u.id
+               AND uf1.is_deleted = 0) AS follower_count,
+            (SELECT COUNT(*)
+             FROM follows f2
+             JOIN users uf2 ON uf2.id = f2.following_id
+             WHERE f2.follower_id = u.id
+               AND uf2.is_deleted = 0) AS following_count,
+            CASE
+                WHEN EXISTS (
+                    SELECT 1
+                    FROM follows f3
+                    WHERE f3.follower_id = #{viewerId}
+                      AND f3.following_id = u.id
+                ) THEN 1 ELSE 0
+                END AS is_following
+        FROM users u
+        WHERE u.id = #{userId}
+          AND u.is_deleted = 0
+    </select>
+    <select id="findUserProfile" resultMap="UserResponseMap">
+        SELECT
+            u.id,
+            u.email,
+            u.nickname,
+            u.profile_image_url,
+            u.status_message,
+            u.profile_theme,
+            u.avatar_decoration,
+            u.popover_decoration,
+            u.role,
+            (SELECT COUNT(*)
+             FROM follows f1
+             JOIN users uf1 ON uf1.id = f1.follower_id
+             WHERE f1.following_id = u.id
+               AND uf1.is_deleted = 0) AS follower_count,
+            (SELECT COUNT(*)
+             FROM follows f2
+             JOIN users uf2 ON uf2.id = f2.following_id
+             WHERE f2.follower_id = u.id
+               AND uf2.is_deleted = 0) AS following_count,
+            (SELECT COUNT(*)
+             FROM quizzes q
+             WHERE q.user_id = u.id
+               AND q.is_public = 1) AS quiz_count,
+            CASE
+                WHEN EXISTS (
+                    SELECT 1
+                    FROM follows f3
+                    WHERE f3.follower_id = #{viewerId}
+                      AND f3.following_id = u.id
+                ) THEN 1 ELSE 0
+                END AS is_followed_by_me
+        FROM users u
+        WHERE u.id = #{userId}
+          AND u.is_deleted = 0
+    </select>
+</mapper>

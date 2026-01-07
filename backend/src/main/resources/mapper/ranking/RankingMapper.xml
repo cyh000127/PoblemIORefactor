@@ -1,0 +1,47 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper
+        PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="com.problemio.ranking.mapper.RankingMapper">
+
+    <resultMap id="rankingRowMap" type="com.problemio.ranking.dto.RankingRowDto">
+        <result column="user_id" property="userId"/>
+        <result column="nickname" property="nickname"/>
+        <result column="profile_image_url" property="profileImageUrl"/>
+        <result column="solved_quiz_count" property="solvedQuizCount"/>
+        <result column="total_correct" property="totalCorrect"/>
+        <result column="total_questions" property="totalQuestions"/>
+        <result column="accuracy" property="accuracy"/>
+        <result column="last_submitted_at" property="lastSubmittedAt"/>
+    </resultMap>
+
+    <select id="findRankingInPeriod" resultMap="rankingRowMap">
+        SELECT
+            u.id AS user_id,
+            u.nickname,
+            u.profile_image_url,
+            COUNT(DISTINCT s.quiz_id) AS solved_quiz_count,
+            SUM(s.correct_count) AS total_correct,
+            SUM(s.total_questions) AS total_questions,
+            (SUM(s.correct_count) / SUM(s.total_questions)) AS accuracy,
+            MAX(s.submitted_at) AS last_submitted_at
+        FROM submissions s
+        JOIN users u ON u.id = s.user_id
+        WHERE
+            s.user_id IS NOT NULL
+            AND u.is_deleted = 0
+            AND s.submitted_at >= #{start}
+            AND s.submitted_at &lt; #{end}
+        GROUP BY u.id, u.nickname, u.profile_image_url
+        HAVING solved_quiz_count > 0
+        ORDER BY
+            (
+              COUNT(DISTINCT s.quiz_id)
+              * (0.3 + 0.7 * ((SUM(s.correct_count) + 20 * 0.6) / (SUM(s.total_questions) + 20)))
+              * LEAST(1.0, ( (SUM(s.total_questions) / NULLIF(COUNT(DISTINCT s.quiz_id),0)) / 50.0 ))
+            ) DESC,
+            last_submitted_at DESC
+        LIMIT #{limit}
+    </select>
+</mapper>

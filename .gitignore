@@ -1,0 +1,9 @@
+.idea/
+*.iws
+*.iml
+*.ipr
+*.env
+
+
+build/**
+**/resources/static/**

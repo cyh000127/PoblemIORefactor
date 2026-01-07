@@ -1,0 +1,123 @@
+plugins {
+    id 'java'
+    id 'org.springframework.boot' version '3.5.7'
+    id 'io.spring.dependency-management' version '1.1.7'
+    id 'org.jetbrains.kotlin.jvm'
+}
+
+group = 'com.test'
+version = '0.0.1-SNAPSHOT'
+description = 'backend'
+
+java {
+    toolchain {
+        languageVersion = JavaLanguageVersion.of(17)
+    }
+}
+
+configurations {
+    compileOnly {
+        extendsFrom annotationProcessor
+    }
+}
+
+repositories {
+    mavenCentral()
+}
+
+dependencies {
+
+    // 의존성 추가시 주석 달아놓을 것
+    // 이메일 인증 관련
+    implementation 'org.springframework.boot:spring-boot-starter-mail'
+
+    // JWT 관련 security
+    implementation 'org.springframework.boot:spring-boot-starter-security'
+    testImplementation 'org.springframework.security:spring-security-test'
+
+    // JWT 라이브러리
+    implementation 'io.jsonwebtoken:jjwt-api:0.12.6'
+    runtimeOnly 'io.jsonwebtoken:jjwt-impl:0.12.6'
+    runtimeOnly 'io.jsonwebtoken:jjwt-jackson:0.12.6'
+
+    // @NotBull, @Email 등 DTO 검증
+    implementation 'org.springframework.boot:spring-boot-starter-validation'
+
+    // starter-web
+    implementation 'org.springframework.boot:spring-boot-starter-web'
+    developmentOnly 'org.springframework.boot:spring-boot-devtools'
+    testImplementation 'org.springframework.boot:spring-boot-starter-test'
+
+    // cache (Caffeine)
+    implementation 'org.springframework.boot:spring-boot-starter-cache'
+    implementation 'com.github.ben-manes.caffeine:caffeine'
+
+    // Lombok
+    compileOnly 'org.projectlombok:lombok'
+    annotationProcessor 'org.projectlombok:lombok'
+
+    // mybatis
+    implementation 'org.mybatis.spring.boot:mybatis-spring-boot-starter:3.0.5'
+    testImplementation 'org.mybatis.spring.boot:mybatis-spring-boot-starter-test:3.0.5'
+    runtimeOnly 'com.mysql:mysql-connector-j'
+
+    testRuntimeOnly 'org.junit.platform:junit-platform-launcher'
+    implementation "org.jetbrains.kotlin:kotlin-stdlib-jdk8"
+
+    //실시간 Ranking 관련 Cache
+    implementation 'org.springframework.boot:spring-boot-starter-cache'
+    implementation 'com.github.ben-manes.caffeine:caffeine'
+
+    // S3
+    // S3 dependency removed
+    // implementation 'io.awspring.cloud:spring-cloud-aws-starter-s3:3.1.1'
+
+    // 유저가 올린 파일 타입 검사기
+    implementation 'org.apache.tika:tika-core:2.9.2'
+  }
+
+tasks.named('test') {
+    useJUnitPlatform()
+}
+
+// --- Frontend Build Integration ---
+
+def frontendDir = "$projectDir/../frontend"
+
+task installDependencies(type: Exec) {
+    workingDir frontendDir
+    inputs.file "$frontendDir/package.json"
+    inputs.file "$frontendDir/package-lock.json"
+    outputs.dir "$frontendDir/node_modules"
+    if (System.getProperty('os.name').toLowerCase(Locale.ROOT).contains('windows')) {
+        commandLine "npm.cmd", "install"
+    } else {
+        commandLine "npm", "install"
+    }
+}
+
+task buildVue(type: Exec) {
+    dependsOn installDependencies
+    workingDir frontendDir
+    inputs.dir "$frontendDir/src"
+    inputs.file "$frontendDir/package.json"
+    inputs.file "$frontendDir/vite.config.js"
+    // Output is handled by Vite config (../backend/src/main/resources/static)
+    // outputs.dir "$projectDir/src/main/resources/static" 
+    
+    if (System.getProperty('os.name').toLowerCase(Locale.ROOT).contains('windows')) {
+        commandLine "npm.cmd", "run", "build"
+    } else {
+        commandLine "npm", "run", "build"
+    }
+}
+
+//processResources {
+//    dependsOn buildVue
+//}
+//
+//bootJar {
+//    archiveBaseName = 'problemio'  // JAR 파일의 이름 설정
+//    version = '0.0.1-SNAPSHOT'     // 버전 설정
+//    mainClass.set('com.problemio.BackendApplication')  // main 클래스 설정
+//}

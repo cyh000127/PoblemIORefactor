@@ -1,0 +1,241 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper
+        PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="com.problemio.comment.mapper.CommentMapper">
+
+    <resultMap id="commentResult" type="com.problemio.comment.domain.Comment">
+        <id property="id" column="id"/>
+        <result property="quizId" column="quiz_id"/>
+        <result property="parentCommentId" column="parent_comment_id"/>
+        <result property="rootCommentId" column="root_comment_id"/>
+        <result property="userId" column="user_id"/>
+        <result property="guestNickname" column="guest_nickname"/>
+        <result property="guestPasswordHash" column="guest_password_hash"/>
+        <result property="writerIp" column="writer_ip"/>
+        <result property="content" column="content" jdbcType="LONGVARCHAR"/>
+        <result property="likeCount" column="like_count"/>
+        <!-- Lombok이 만들어주는 세터 이름 때문에 property 이름 수정-->
+        <result property="deleted" column="is_deleted"/>
+        <result property="createdAt" column="created_at"/>
+        <result property="updatedAt" column="updated_at"/>
+    </resultMap>
+
+    <!-- INSERT -->
+    <insert id="insertComment" useGeneratedKeys="true" keyProperty="id">
+        INSERT INTO comments (
+            quiz_id,
+            parent_comment_id,
+            root_comment_id,
+            user_id,
+            guest_nickname,
+            guest_password_hash,
+            writer_ip,
+            content,
+            like_count,
+            created_at,
+            updated_at
+        ) VALUES (
+                     #{quizId},
+                     #{parentCommentId},
+                     #{rootCommentId},
+                     #{userId},
+                     #{guestNickname},
+                     #{guestPasswordHash},
+                     #{writerIp},
+                     #{content, jdbcType=LONGVARCHAR},
+                     #{likeCount},
+                     #{createdAt},
+                     #{updatedAt}
+                 )
+    </insert>
+
+    <!-- UPDATE -->
+    <update id="updateComment">
+        UPDATE comments
+        SET content = #{content, jdbcType=LONGVARCHAR},
+            updated_at = #{updatedAt}
+        WHERE id = #{id}
+          AND is_deleted = 0
+    </update>
+
+    <!-- SOFT DELETE -->
+    <update id="softDeleteComment">
+        UPDATE comments
+        SET is_deleted = 1,
+            updated_at = #{updatedAt}
+        WHERE id = #{id}
+            AND is_deleted = 0 <!-- 이미 삭제된 댓글에 대해 불필요한 업데이트 방지-->
+    </update>
+
+    <update id="updateRootCommentId">
+        UPDATE comments
+        SET root_comment_id = #{rootCommentId}
+        WHERE id = #{id}
+    </update>
+
+    <!-- FIND ONE -->
+    <select id="findById" resultMap="commentResult">
+        SELECT
+            id,
+            quiz_id,
+            user_id,
+            guest_nickname,
+            guest_password_hash,
+            writer_ip,
+            content,
+            like_count,
+            is_deleted,
+            created_at,
+            updated_at
+        FROM comments
+        WHERE id = #{id}
+    </select>
+
+    <!-- LIST -->
+    <select id="findRootCommentsByQuizId" resultMap="commentResult">
+        SELECT
+            c.id,
+            c.quiz_id,
+            c.parent_comment_id,
+            c.root_comment_id,
+            c.user_id,
+            c.guest_nickname,
+            c.guest_password_hash,
+            c.writer_ip,
+            c.content,
+            c.like_count,
+            c.is_deleted,
+            c.created_at,
+            c.updated_at
+        FROM comments c
+        LEFT JOIN users u ON u.id = c.user_id
+        WHERE c.quiz_id = #{quizId}
+          AND c.parent_comment_id IS NULL
+          AND c.is_deleted = 0
+          AND (c.user_id IS NULL OR u.is_deleted = 0)
+        ORDER BY c.created_at DESC
+        LIMIT #{limit}
+        OFFSET #{offset}
+    </select>
+
+    <select id="countCommentsByQuizId" resultType="int">
+        SELECT COUNT(*)
+        FROM comments c
+        LEFT JOIN users u ON u.id = c.user_id
+        WHERE c.quiz_id = #{quizId}
+          AND c.parent_comment_id IS NULL
+          AND c.is_deleted = 0
+          AND (c.user_id IS NULL OR u.is_deleted = 0)
+    </select>
+
+    <select id="countCommentsByQuizIds" resultType="com.problemio.comment.mapper.CommentMapper$CommentCount">
+        SELECT c.quiz_id AS quizId, COUNT(*) AS count
+        FROM comments c
+        LEFT JOIN users u ON u.id = c.user_id
+        WHERE c.quiz_id IN
+        <foreach collection="quizIds" item="qid" open="(" separator="," close=")">
+            #{qid}
+        </foreach>
+        AND c.is_deleted = 0
+        AND (c.user_id IS NULL OR u.is_deleted = 0)
+        GROUP BY c.quiz_id
+    </select>
+
+    <select id="findRepliesByParentId" resultMap="commentResult">
+        SELECT
+            c.id,
+            c.quiz_id,
+            c.parent_comment_id,
+            c.root_comment_id,
+            c.user_id,
+            c.guest_nickname,
+            c.guest_password_hash,
+            c.writer_ip,
+            c.content,
+            c.like_count,
+            c.is_deleted,
+            c.created_at,
+            c.updated_at
+        FROM comments c
+        LEFT JOIN users u ON u.id = c.user_id
+        WHERE c.parent_comment_id = #{parentId}
+          AND c.is_deleted = 0
+          AND (c.user_id IS NULL OR u.is_deleted = 0)
+        ORDER BY c.created_at ASC
+    </select>
+
+    <select id="countRepliesByParentIds" resultType="com.problemio.comment.mapper.CommentMapper$CommentReplyCount">
+        SELECT c.parent_comment_id AS parentId, COUNT(*) AS count
+        FROM comments c
+        LEFT JOIN users u ON u.id = c.user_id
+        WHERE c.parent_comment_id IN
+        <foreach collection="parentIds" item="pid" open="(" separator="," close=")">
+            #{pid}
+        </foreach>
+        AND c.is_deleted = 0
+        AND (c.user_id IS NULL OR u.is_deleted = 0)
+        GROUP BY c.parent_comment_id
+    </select>
+
+    <!-- LIKE COUNT -->
+    <update id="increaseLikeCount">
+        UPDATE comments
+        SET like_count = like_count + 1
+        WHERE id = #{commentId}
+          AND is_deleted = 0
+    </update>
+
+    <update id="decreaseLikeCount">
+        UPDATE comments
+        SET like_count = like_count - 1
+        WHERE id = #{commentId}
+          AND like_count > 0
+          AND is_deleted = 0
+    </update>
+
+    <select id="findIdsByUserId" resultType="long">
+        SELECT id
+        FROM comments
+        WHERE user_id = #{userId}
+    </select>
+
+    <select id="findIdsByQuizId" resultType="long">
+        SELECT id
+        FROM comments
+        WHERE quiz_id = #{quizId}
+    </select>
+
+    <update id="softDeleteByUserId">
+        UPDATE comments
+        SET is_deleted = 1,
+            updated_at = #{updatedAt}
+        WHERE user_id = #{userId}
+          AND is_deleted = 0
+    </update>
+
+    <update id="softDeleteByQuizId">
+        UPDATE comments
+        SET is_deleted = 1,
+            updated_at = #{updatedAt}
+        WHERE quiz_id = #{quizId}
+          AND is_deleted = 0
+    </update>
+
+    <update id="anonymizeByUserId">
+        UPDATE comments
+        SET user_id = NULL,
+            guest_nickname = '탈퇴한 회원',
+            guest_password_hash = NULL,
+            writer_ip = NULL,
+            updated_at = #{updatedAt}
+        WHERE user_id = #{userId}
+    </update>
+
+    <delete id="deleteByUserId">
+        DELETE FROM comments
+        WHERE user_id = #{userId}
+    </delete>
+
+</mapper>

@@ -1,0 +1,96 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper
+        PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="com.problemio.follow.mapper.FollowMapper">
+
+    <!-- 공통 resultMap: follows + users 조인 결과를 FollowUserDto로 매핑 -->
+    <resultMap id="FollowUserResultMap" type="com.problemio.follow.dto.FollowUserDto">
+        <id     property="id"              column="id"/>
+        <result property="nickname"        column="nickname"/>
+        <result property="profileImageUrl" column="profile_image_url"/>
+        <result property="statusMessage"   column="status_message"/>
+    </resultMap>
+
+    <!-- 팔로우 생성 -->
+    <insert id="insert" parameterType="com.problemio.follow.domain.Follow">
+        INSERT INTO follows (
+            follower_id,
+            following_id,
+            created_at
+        )
+        VALUES (
+                   #{followerId},
+                   #{followingId},
+                   #{createdAt}
+               )
+    </insert>
+
+    <!-- 팔로우 삭제 -->
+    <delete id="delete">
+        DELETE FROM follows
+        WHERE follower_id = #{followerId}
+          AND following_id = #{followingId}
+    </delete>
+
+    <!-- 팔로우 존재 여부 -->
+    <select id="exists" resultType="int">
+        SELECT COUNT(1)
+        FROM follows
+        WHERE follower_id = #{followerId}
+          AND following_id = #{followingId}
+    </select>
+
+    <!-- 특정 유저의 팔로워 목록 (나를 팔로우하는 사람) -->
+    <select id="findFollowers" resultMap="FollowUserResultMap">
+        SELECT u.id,
+               u.nickname,
+               u.profile_image_url,
+               u.status_message
+        FROM follows f
+        JOIN users u ON f.follower_id = u.id
+        WHERE f.following_id = #{userId}
+          AND u.is_deleted = 0
+        ORDER BY f.created_at DESC
+    </select>
+
+    <!-- 특정 유저가 팔로우하는 사람 목록 -->
+    <select id="findFollowings" resultMap="FollowUserResultMap">
+        SELECT u.id,
+               u.nickname,
+               u.profile_image_url,
+               u.status_message
+        FROM follows f
+        JOIN users u ON f.following_id = u.id
+        WHERE f.follower_id = #{userId}
+          AND u.is_deleted = 0
+        ORDER BY f.created_at DESC
+    </select>
+
+    <!-- 팔로워 수 -->
+    <select id="countFollowers" resultType="int">
+        SELECT COUNT(1)
+        FROM follows f
+        JOIN users u ON u.id = f.follower_id
+        WHERE f.following_id = #{userId}
+          AND u.is_deleted = 0
+    </select>
+
+    <!-- 팔로잉 수 -->
+    <select id="countFollowings" resultType="int">
+        SELECT COUNT(1)
+        FROM follows f
+        JOIN users u ON u.id = f.following_id
+        WHERE f.follower_id = #{userId}
+          AND u.is_deleted = 0
+    </select>
+
+    <!-- 회원 탈퇴 시 양방향 팔로우 관계 삭제 -->
+    <delete id="deleteByUserId">
+        DELETE FROM follows
+        WHERE follower_id = #{userId}
+           OR following_id = #{userId}
+    </delete>
+
+</mapper>

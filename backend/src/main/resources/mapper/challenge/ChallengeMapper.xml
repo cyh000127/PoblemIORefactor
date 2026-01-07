@@ -1,0 +1,40 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="com.problemio.challenge.mapper.ChallengeMapper">
+
+    <resultMap id="ChallengeResultMap" type="com.problemio.challenge.domain.Challenge">
+        <id property="id" column="id"/>
+        <result property="title" column="title"/>
+        <result property="description" column="description"/>
+        <result property="challengeType" column="challenge_type"/>
+        <result property="targetQuizId" column="target_quiz_id"/>
+        <result property="timeLimit" column="time_limit"/>
+        <result property="startAt" column="start_at"/>
+        <result property="endAt" column="end_at"/>
+        <result property="createdAt" column="created_at"/>
+        <result property="updatedAt" column="updated_at"/>
+    </resultMap>
+
+    <select id="findAll" resultMap="ChallengeResultMap">
+        SELECT * FROM challenges
+        ORDER BY created_at DESC
+    </select>
+
+    <select id="findById" resultMap="ChallengeResultMap">
+        SELECT * FROM challenges
+        WHERE id = #{id}
+    </select>
+
+    <insert id="insert" parameterType="com.problemio.challenge.domain.Challenge" useGeneratedKeys="true" keyProperty="id">
+        INSERT INTO challenges (
+            title, description, challenge_type, target_quiz_id, time_limit, start_at, end_at, created_at, updated_at
+        ) VALUES (
+            #{title}, #{description}, #{challengeType}, #{targetQuizId}, #{timeLimit}, #{startAt}, #{endAt}, #{createdAt}, #{updatedAt}
+        )
+    </insert>
+    
+    <!-- 챌린지와 연결된 퀴즈 정보도 필요하다면 Join 쿼리 추가 가능 -->
+
+</mapper>

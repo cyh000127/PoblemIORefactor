@@ -1,0 +1,44 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="com.problemio.quiz.mapper.QuestionAnswerMapper">
+
+    <resultMap id="QuestionAnswerResultMap" type="com.problemio.quiz.domain.QuestionAnswer">
+        <id property="id" column="id"/>
+        <result property="questionId" column="question_id"/>
+        <result property="answerText" column="answer_text"/>
+        <result property="sortOrder" column="sort_order"/>
+    </resultMap>
+
+    <insert id="insertAnswer" parameterType="com.problemio.quiz.domain.QuestionAnswer" useGeneratedKeys="true" keyProperty="id">
+        INSERT INTO question_answers (question_id, answer_text, sort_order)
+        VALUES (#{questionId}, #{answerText}, #{sortOrder})
+    </insert>
+
+    <delete id="deleteByQuestionId">
+        DELETE FROM question_answers WHERE question_id = #{questionId}
+    </delete>
+
+    <select id="findByQuestionId" resultMap="QuestionAnswerResultMap">
+        SELECT * FROM question_answers WHERE question_id = #{questionId} ORDER BY sort_order ASC
+    </select>
+
+    <select id="findByQuestionIds" resultMap="QuestionAnswerResultMap">
+        SELECT *
+        FROM question_answers
+        WHERE question_id IN
+        <foreach collection="questionIds" item="id" open="(" separator="," close=")">
+            #{id}
+        </foreach>
+        ORDER BY question_id ASC, sort_order ASC
+    </select>
+
+    <select id="findByQuizId" resultMap="QuestionAnswerResultMap">
+        SELECT qa.*
+        FROM question_answers qa
+        JOIN questions q ON q.id = qa.question_id
+        WHERE q.quiz_id = #{quizId}
+        ORDER BY qa.question_id ASC, qa.sort_order ASC
+    </select>
+</mapper>
