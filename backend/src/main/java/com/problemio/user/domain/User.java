@@ -63,9 +63,8 @@ public class User {
 
 
     // == 비즈니스 로직 ==//
-
     // 프로필 업데이트
-    public void updateProfile(String nickname, Stirng StatusMessage, String ProfileImageIrl){
+    public void updateProfile(String nickname, String StatusMessage, String ProfileImageIrl){
         if(nickname != null) this.nickname = nickname;
         if(StatusMessage != null) this.statusMessage = StatusMessage;
         if(ProfileImageIrl != null) this.profileImageUrl = ProfileImageIrl;
@@ -80,6 +79,4 @@ public class User {
     public void delete(){
         this.isDeleted = DeleteStatus.DELETED;
     }
-
-
 }
