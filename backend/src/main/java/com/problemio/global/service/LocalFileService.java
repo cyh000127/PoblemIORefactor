@@ -13,10 +13,9 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.nio.file.StandardCopyOption;
-import java.util.UUID;
 
 @Service
-public class S3Service {
+public class LocalFileService {
 
     @Value("${file.upload-dir}")
     private String uploadDir;
@@ -37,15 +36,15 @@ public class S3Service {
      * 파일을 로컬에 저장하고 상대 경로(Key)를 반환합니다.
      * key는 호출자가 지정한 경로(폴더+파일명)를 그대로 사용합니다.
      */
-    public String upload(MultipartFile file, String s3Key) {
+    public String upload(MultipartFile file, String fileKey) {
         try {
-            // s3Key에 포함된 디렉토리 경로 생성
-            Path targetPath = this.fileStorageLocation.resolve(s3Key).normalize();
+            // fileKey에 포함된 디렉토리 경로 생성
+            Path targetPath = this.fileStorageLocation.resolve(fileKey).normalize();
             Files.createDirectories(targetPath.getParent());
 
             Files.copy(file.getInputStream(), targetPath, StandardCopyOption.REPLACE_EXISTING);
 
-            return s3Key;
+            return fileKey;
 
         } catch (IOException e) {
             throw new BusinessException(ErrorCode.INTERNAL_SERVER_ERROR);
@@ -55,13 +54,13 @@ public class S3Service {
     /**
      * 바이트 배열을 로컬에 저장하고 Key를 반환합니다.
      */
-    public String uploadBytes(byte[] bytes, String s3Key, String contentType) {
+    public String uploadBytes(byte[] bytes, String fileKey, String contentType) {
         try {
-            Path targetPath = this.fileStorageLocation.resolve(s3Key).normalize();
+            Path targetPath = this.fileStorageLocation.resolve(fileKey).normalize();
             Files.createDirectories(targetPath.getParent());
 
             Files.write(targetPath, bytes);
-            return s3Key;
+            return fileKey;
         } catch (Exception e) {
             throw new BusinessException(ErrorCode.INTERNAL_SERVER_ERROR);
         }

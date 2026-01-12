@@ -3,7 +3,7 @@ package com.problemio.comment.dto;
 import lombok.*;
 import java.time.LocalDateTime;
 import com.fasterxml.jackson.databind.annotation.JsonSerialize;
-import com.problemio.global.config.S3UrlSerializer;
+import com.problemio.global.config.FileUrlSerializer;
 
 @Getter
 @Setter
@@ -22,7 +22,7 @@ public class CommentResponse {
     private String nickname;        // 회원: users.nickname, 게스트: guest_nickname
 
 
-    @JsonSerialize(using = S3UrlSerializer.class)
+    @JsonSerialize(using = FileUrlSerializer.class)
     private String profileImageUrl; // 회원만 존재, 게스트는 null
 
     private String content;

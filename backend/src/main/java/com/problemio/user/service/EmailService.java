@@ -2,7 +2,7 @@ package com.problemio.user.service;
 
 import com.problemio.global.exception.BusinessException;
 import com.problemio.global.exception.ErrorCode;
-import com.problemio.user.mapper.UserAuthMapper;
+import com.problemio.user.repository.UserRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.mail.SimpleMailMessage;
 import org.springframework.mail.javamail.JavaMailSender;
@@ -17,7 +17,7 @@ import java.util.concurrent.ConcurrentHashMap;
 public class EmailService {
 
     private final JavaMailSender mailSender;
-    private final UserAuthMapper userAuthMapper;
+    private final UserRepository userRepository;
 
     // DB 대신 메모리에 저장 (Key: 이메일, Value: 인증정보)
     private final Map<String, VerificationInfo> memoryStore = new ConcurrentHashMap<>();
@@ -39,7 +39,7 @@ public class EmailService {
     // 1. 인증 코드 발송 및 저장
     public void sendVerificationCode(String email) {
         // 이미 가입된 이메일인지 확인
-        if (userAuthMapper.findByEmail(email).isPresent()) {
+        if (userRepository.existsByEmail(email)) {
             throw new BusinessException(ErrorCode.EMAIL_DUPLICATED);
         }
 

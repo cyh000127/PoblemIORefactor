@@ -1,7 +1,7 @@
 package com.problemio.global.auth;
 
 import com.problemio.user.domain.User;
-import com.problemio.user.mapper.UserAuthMapper;
+import com.problemio.user.repository.UserRepository;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.cache.annotation.Cacheable;
@@ -16,7 +16,7 @@ import org.springframework.transaction.annotation.Transactional;
 @Slf4j
 public class CustomUserDetailsService implements UserDetailsService {
 
-    private final UserAuthMapper userAuthMapper;
+    private final UserRepository userRepository;
 
     @Override
     @Transactional(readOnly = true)
@@ -26,7 +26,7 @@ public class CustomUserDetailsService implements UserDetailsService {
         log.info("[UserDetails] cache MISS for email={}", email);
 
         // DB에서 조회
-        User user = userAuthMapper.findByEmail(email)
+        User user = userRepository.findByEmail(email)
                 .orElseThrow(() -> new UsernameNotFoundException("해당 이메일을 가진 사용자를 찾을 수 없습니다: " + email));
 
         // UserDetails로 변환하여 반환

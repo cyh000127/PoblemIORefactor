@@ -10,8 +10,8 @@ import com.problemio.user.dto.UserLoginRequest;
 import com.problemio.user.dto.UserResponse;
 import com.problemio.user.dto.UserSignupRequest;
 import com.problemio.user.mapper.RefreshTokenMapper;
-import com.problemio.user.mapper.UserAuthMapper;
 import com.problemio.global.util.TimeUtils;
+import com.problemio.user.repository.UserRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
@@ -21,7 +21,7 @@ import org.springframework.transaction.annotation.Transactional;
 @RequiredArgsConstructor
 public class UserAuthServiceImpl implements UserAuthService {
 
-    private final UserAuthMapper userAuthMapper;
+    private final UserRepository userRepository; // UserAuthMapper -> UserRepository 교체
     private final RefreshTokenMapper refreshTokenMapper;
     private final PasswordEncoder passwordEncoder;
     private final JwtTokenProvider jwtTokenProvider;
@@ -30,10 +30,10 @@ public class UserAuthServiceImpl implements UserAuthService {
     @Override
     @Transactional
     public UserResponse signup(UserSignupRequest request) {
-        if (userAuthMapper.findByEmail(request.getEmail()).isPresent()) {
+        if (userRepository.existsByEmail(request.getEmail())) {
             throw new BusinessException(ErrorCode.EMAIL_DUPLICATED);
         }
-        if (userAuthMapper.findByNickname(request.getNickname()).isPresent()) {
+        if (userRepository.existsByNickname(request.getNickname())) {
             throw new BusinessException(ErrorCode.NICKNAME_DUPLICATED);
         }
 
@@ -48,13 +48,13 @@ public class UserAuthServiceImpl implements UserAuthService {
              throw new BusinessException(ErrorCode.INVALID_INPUT_VALUE); // 적절한 에러 코드로 대체 필요할 수 있음
         }
 
-        User user = new User();
-        user.setEmail(request.getEmail());
-        user.setNickname(request.getNickname());
-        user.setPasswordHash(passwordEncoder.encode(request.getPassword()));
+        User user = User.builder()
+                .email(request.getEmail())
+                .password(passwordEncoder.encode(request.getPassword()))
+                .nickname(request.getNickname())
+                .build();
 
-        userAuthMapper.insertUser(user);
-
+        userRepository.save(user);
         // 인증 정보 사용 처리 (재사용 방지) - 로컬 환경을 위해 주석 처리
         // emailService.consumeVerification(request.getEmail());
 
@@ -68,10 +68,11 @@ public class UserAuthServiceImpl implements UserAuthService {
     @Override
     @Transactional
     public TokenResponse login(UserLoginRequest request) {
-        User user = userAuthMapper.findByEmail(request.getEmail())
+        // JPA Repository 사용 (isActive 체크는 User.getStatus()로)
+        User user = userRepository.findByEmail(request.getEmail())
                 .orElseThrow(() -> new BusinessException(ErrorCode.INVALID_LOGIN));
 
-        if (user.isDeleted()) {
+        if (!user.getStatus()) {
             throw new BusinessException(ErrorCode.USER_NOT_FOUND);
         }
 
@@ -95,7 +96,7 @@ public class UserAuthServiceImpl implements UserAuthService {
     @Override
     @Transactional
     public void logout(String email) {
-        User user = userAuthMapper.findByEmail(email)
+        User user = userRepository.findByEmail(email)
                 .orElseThrow(() -> new BusinessException(ErrorCode.USER_NOT_FOUND));
         refreshTokenMapper.deleteByUserId(user.getId());
     }
@@ -114,10 +115,10 @@ public class UserAuthServiceImpl implements UserAuthService {
         RefreshToken dbToken = refreshTokenMapper.findByTokenValue(refreshToken)
                 .orElseThrow(() -> new BusinessException(ErrorCode.ACCESS_DENIED));
 
-        User user = userAuthMapper.findById(dbToken.getUserId())
+        User user = userRepository.findById(dbToken.getUserId())
                 .orElseThrow(() -> new BusinessException(ErrorCode.USER_NOT_FOUND));
 
-        if (user.isDeleted()) {
+        if (!user.getStatus()) {
             throw new BusinessException(ErrorCode.USER_NOT_FOUND);
         }
 

@@ -2,7 +2,7 @@ package com.problemio.user.dto;
 
 import lombok.*;
 import com.fasterxml.jackson.databind.annotation.JsonSerialize;
-import com.problemio.global.config.S3UrlSerializer;
+import com.problemio.global.config.FileUrlSerializer;
 
 @Getter
 @Setter
@@ -15,7 +15,7 @@ public class UserPopoverResponse {
     private String nickname;        // 닉네임
 
 
-    @JsonSerialize(using = S3UrlSerializer.class)
+    @JsonSerialize(using = FileUrlSerializer.class)
     private String profileImageUrl; // 프로필 이미지
     private String statusMessage;   // 상태 메시지
     private String profileTheme;

@@ -137,7 +137,7 @@ public class AdminController {
         return ResponseEntity.ok().build();
     }
     @Autowired
-    private com.problemio.global.service.S3Service s3Service;
+    private com.problemio.global.service.LocalFileService localFileService;
 
     @PostMapping("/items/upload")
     public ResponseEntity<String> uploadItemImage(@RequestParam("file") org.springframework.web.multipart.MultipartFile file, @RequestParam("type") String type) {
@@ -154,12 +154,12 @@ public class AdminController {
             // 형식: public/{subDir}/{timestamp}_{originalName}
             String originalFilename = org.springframework.util.StringUtils.cleanPath(file.getOriginalFilename());
             String filename = System.currentTimeMillis() + "_" + originalFilename;
-            String s3Key = "public/" + subDir + "/" + filename;
+            String fileKey = "public/" + subDir + "/" + filename;
             
-            // S3 업로드
-            String uploadedPath = s3Service.upload(file, s3Key);
+            // 로컬 업로드
+            String uploadedPath = localFileService.upload(file, fileKey);
             
-            // DB 저장용 경로(s3Key) 반환 (프론트엔드에서 Base URL 연결)
+            // DB 저장용 경로(fileKey) 반환 (프론트엔드에서 Base URL 연결)
             return ResponseEntity.ok(uploadedPath);
 
         } catch (Exception e) {

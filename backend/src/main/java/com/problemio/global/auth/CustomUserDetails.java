@@ -1,5 +1,6 @@
 package com.problemio.global.auth;
 
+import com.problemio.user.domain.Role;
 import com.problemio.user.domain.User;
 import lombok.Getter;
 import lombok.RequiredArgsConstructor;
@@ -19,11 +20,8 @@ public class CustomUserDetails implements UserDetails {
     // 권한 반환
     @Override
     public Collection<? extends GrantedAuthority> getAuthorities() {
-        String role = user.getRole();
-        if (role == null || role.isEmpty()) {
-            role = "ROLE_USER"; 
-        }
-        return List.of(new SimpleGrantedAuthority(role));
+        Role role = user.getRole();
+        return List.of(new SimpleGrantedAuthority(role.name()));
     }
 
     @Override
@@ -57,6 +55,6 @@ public class CustomUserDetails implements UserDetails {
     // 계정 활성화 여부 (true: 활성화) -> 탈퇴한 유저면 false 처리
     @Override
     public boolean isEnabled() {
-        return !user.isDeleted();
+       return getUser().getStatus();
     }
 }

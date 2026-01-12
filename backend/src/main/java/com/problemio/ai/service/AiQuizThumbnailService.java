@@ -5,7 +5,7 @@ import com.problemio.ai.dto.AiThumbnailCandidateResponse;
 import com.problemio.ai.dto.AiThumbnailConfirmResponse;
 import com.problemio.global.exception.BusinessException;
 import com.problemio.global.exception.ErrorCode;
-import com.problemio.global.service.S3Service;
+import com.problemio.global.service.LocalFileService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
@@ -20,7 +20,7 @@ public class AiQuizThumbnailService {
 
     private final CandidateCache candidateCache;
     private final GmsGeminiClient gmsGeminiClient;
-    private final S3Service s3Service;
+    private final LocalFileService localFileService;
 
     public AiThumbnailCandidateResponse generateCandidates(String title, String description) {
         String safeTitle = title == null ? "" : title.trim();
@@ -58,10 +58,10 @@ public class AiQuizThumbnailService {
         System.out.println("Cache HIT for ID: " + candidateId + ", size: " + bytes.length);
 
         String key = "quiz-thumbnails/" + userId + "/" + candidateId + ".png";
-        String s3Key = s3Service.uploadBytes(bytes, key, "image/png");
+        String fileKey = localFileService.uploadBytes(bytes, key, "image/png");
         candidateCache.evict(candidateId);
 
-        String fullUrl = buildFullUrl(s3Key);
+        String fullUrl = buildFullUrl(fileKey);
         return AiThumbnailConfirmResponse.builder()
                 .thumbnailUrl(fullUrl)
                 .build();
@@ -87,8 +87,8 @@ public class AiQuizThumbnailService {
                 .build();
     }
 
-    private String buildFullUrl(String s3Key) {
-        String key = s3Key.startsWith("/") ? s3Key.substring(1) : s3Key;
+    private String buildFullUrl(String fileKey) {
+        String key = fileKey.startsWith("/") ? fileKey.substring(1) : fileKey;
         return "/uploads/" + key;
     }
 }

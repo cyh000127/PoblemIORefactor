@@ -2,7 +2,7 @@ package com.problemio.quiz.dto;
 
 import lombok.*;
 import com.fasterxml.jackson.databind.annotation.JsonSerialize;
-import com.problemio.global.config.S3UrlSerializer;
+import com.problemio.global.config.FileUrlSerializer;
 
 @Getter
 @Setter
@@ -16,7 +16,7 @@ public class QuizSummaryDto {
     private String description;
 
 
-    @JsonSerialize(using = S3UrlSerializer.class)
+    @JsonSerialize(using = FileUrlSerializer.class)
     private String thumbnailUrl;
 
 

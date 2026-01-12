@@ -1,14 +1,14 @@
 package com.problemio.ranking.dto;
 
 import com.fasterxml.jackson.databind.annotation.JsonSerialize;
-import com.problemio.global.config.S3UrlSerializer;
+import com.problemio.global.config.FileUrlSerializer;
 
 public class RankingResponseDto {
     private Long userId;
     private String nickname;
 
 
-    @JsonSerialize(using = S3UrlSerializer.class)
+    @JsonSerialize(using = FileUrlSerializer.class)
     private String profileImageUrl;
 
     private int solvedQuizCount;

@@ -142,7 +142,7 @@ public class CustomItemService {
     }
 
     @Autowired
-    private com.problemio.global.service.S3Service s3Service;
+    private com.problemio.global.service.LocalFileService localFileService;
 
     @Transactional
     public void deleteItem(Long itemId) {
@@ -159,18 +159,18 @@ public class CustomItemService {
                 
                 if (configMap.containsKey("image")) {
                     String imagePath = (String) configMap.get("image");
-                    // S3 경로인지 확인 (public/ 시작)
+                    // 로컬 경로인지 확인 (public/ 시작)
                     if (imagePath != null && (imagePath.startsWith("public/") || imagePath.startsWith("/public/"))) {
-                         // S3 키 일관성을 위해 선행 슬래시 제거
+                         // 키 일관성을 위해 선행 슬래시 제거
                          if (imagePath.startsWith("/")) imagePath = imagePath.substring(1);
                          
-                         s3Service.delete(imagePath);
+                          localFileService.delete(imagePath);
                     }
                 }
             }
         } catch (Exception e) {
              // S3 삭제 실패 시 로그만 남기고 트랜잭션은 진행
-             log.warn("Failed to delete S3 image for item " + itemId, e);
+             log.warn("Failed to delete local image for item " + itemId, e);
         }
 
         // FK 제약조건으로 인해 할당된 유저 정보 먼저 삭제

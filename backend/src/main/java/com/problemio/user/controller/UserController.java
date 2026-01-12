@@ -9,7 +9,7 @@ import com.problemio.quiz.service.QuizService;
 import com.problemio.user.dto.UserPopoverResponse;
 import com.problemio.user.dto.UserResponse;
 import com.problemio.user.dto.UserSummaryDto;
-import com.problemio.global.service.S3Service;
+import com.problemio.global.service.LocalFileService;
 
 import com.problemio.user.service.UserService;
 import lombok.RequiredArgsConstructor;
@@ -31,7 +31,7 @@ public class UserController {
 
     private final UserService userService;
     private final QuizService quizService;
-    private final S3Service s3Service;
+    private final LocalFileService localFileService;
 
     @Value("${file.upload-dir}")
     private String uploadDir;
@@ -163,7 +163,7 @@ public class UserController {
 
         // 로컬 디렉토리에서 prefix 기준 이미지 조회
         String prefix = "public/" + type.toLowerCase();
-        List<String> fileNames = s3Service.listFiles(prefix).stream()
+        List<String> fileNames = localFileService.listFiles(prefix).stream()
                    .filter(this::isImageFile)
                    .map(this::buildUrlFromKey)
                    .toList();

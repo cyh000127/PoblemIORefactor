@@ -11,9 +11,12 @@ import com.problemio.user.domain.Role;
 
 import java.time.LocalDateTime;
 
+import org.springframework.data.jpa.domain.support.AuditingEntityListener;
+
 @Getter
 @Entity
 @Table(name="users")
+@EntityListeners(AuditingEntityListener.class)
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
 public class User {
 
@@ -34,6 +37,15 @@ public class User {
 
     @Column
     private String statusMessage;
+
+    @Column
+    private String profileTheme;
+
+    @Column
+    private String avatarDecoration;
+
+    @Column
+    private String popoverDecoration;
 
     @Enumerated(EnumType.STRING)
     @Column(nullable = false)
@@ -61,13 +73,22 @@ public class User {
         this.statusMessage = StatusMessage;
     }
 
+    public boolean getStatus() {
+       return this.isDeleted == DeleteStatus.ACTIVE;
+    }
 
     // == 비즈니스 로직 ==//
     // 프로필 업데이트
-    public void updateProfile(String nickname, String StatusMessage, String ProfileImageIrl){
+    public void updateProfile(String nickname, String statusMessage, String profileImageUrl){
         if(nickname != null) this.nickname = nickname;
-        if(StatusMessage != null) this.statusMessage = StatusMessage;
-        if(ProfileImageIrl != null) this.profileImageUrl = ProfileImageIrl;
+        if(statusMessage != null) this.statusMessage = statusMessage;
+        if(profileImageUrl != null) this.profileImageUrl = profileImageUrl;
+    }
+
+    public void updateDecorations(String profileTheme, String avatarDecoration, String popoverDecoration) {
+        if (profileTheme != null) this.profileTheme = profileTheme;
+        if (avatarDecoration != null) this.avatarDecoration = avatarDecoration;
+        if (popoverDecoration != null) this.popoverDecoration = popoverDecoration;
     }
 
     // 비밀번호 변경
@@ -78,5 +99,13 @@ public class User {
     // 회원 탈퇴
     public void delete(){
         this.isDeleted = DeleteStatus.DELETED;
+        // 탈퇴 시 이메일/비밀번호 랜덤화 등을 여기서 수행할 수도 있음
+        // 유연성을 위해 별도 anonymize 메서드로 분리함
+    }
+
+    public void anonymize(String email, String password) {
+        this.email = email;
+        this.passwordHash = password;
+        // 닉네임 등 다른 필드도 필요 시 익명화
     }
 }

@@ -4,7 +4,7 @@ import com.problemio.global.auth.CustomUserDetails;
 import com.problemio.global.common.ApiResponse;
 import com.problemio.global.exception.BusinessException;
 import com.problemio.global.exception.ErrorCode;
-import com.problemio.global.service.S3Service;
+import com.problemio.global.service.LocalFileService;
 import lombok.RequiredArgsConstructor;
 import org.apache.tika.Tika;
 import org.springframework.http.ResponseEntity;
@@ -27,9 +27,9 @@ import java.util.UUID;
 @RequiredArgsConstructor
 public class FileUploadController {
 
-    private final S3Service s3Service;
+    private final LocalFileService localFileService;
 
-    // S3에 저장될 하위 디렉토리 명 (요청된 구조 반영)
+    // 파일 저장될 하위 디렉토리 명 (요청된 구조 반영)
     // upload 하위
     private static final String DIR_UPLOAD_THUMBNAIL = "public/upload/questions"; // 문제 이미지를 questions에 저장
     // 주석: "questions # 퀘스천 사진 저장", "thumbnail # 문제 썸네일 저장"
@@ -74,14 +74,14 @@ public class FileUploadController {
         String filename = UUID.randomUUID() + extension;
         String subDir = resolveSubDirectory(category);
         
-        // S3 Key 생성
-        String s3KeyPath = subDir + "/" + filename;
+        // File Key 생성
+        String fileKeyPath = subDir + "/" + filename;
 
         // 서비스 호출 (업로드 후 Key 반환)
-        String s3Key = s3Service.upload(file, s3KeyPath);
+        String fileKey = localFileService.upload(file, fileKeyPath);
 
         // 로컬 URL 생성
-        String fullUrl = "/uploads/" + (s3Key.startsWith("/") ? s3Key.substring(1) : s3Key);
+        String fullUrl = "/uploads/" + (fileKey.startsWith("/") ? fileKey.substring(1) : fileKey);
 
         return ResponseEntity.ok(ApiResponse.success(Map.of(
                 "url", fullUrl,

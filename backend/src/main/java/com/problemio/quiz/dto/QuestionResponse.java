@@ -5,7 +5,7 @@ import lombok.Getter;
 
 import java.util.List;
 import com.fasterxml.jackson.databind.annotation.JsonSerialize;
-import com.problemio.global.config.S3UrlSerializer;
+import com.problemio.global.config.FileUrlSerializer;
 
 @Getter
 @Builder
@@ -15,7 +15,7 @@ public class QuestionResponse {
     private String description;
 
 
-    @JsonSerialize(using = S3UrlSerializer.class)
+    @JsonSerialize(using = FileUrlSerializer.class)
     private String imageUrl;
     private List<QuestionAnswerDto> answers;
 }
