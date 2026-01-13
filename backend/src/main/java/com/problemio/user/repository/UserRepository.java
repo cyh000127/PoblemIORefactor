@@ -29,11 +29,11 @@ public interface UserRepository extends JpaRepository<User, Long> {
     @Query(value = "SELECT COUNT(*) "+
             "FROM follows f " +
             "JOIN users u " +
-            "ON u.id = f.follwer_id " +
+            "ON u.id = f.follower_id " +
             "WHERE f.following_id = :userId " +
             "AND u.is_deleted = 'ACTIVE'"
             ,nativeQuery = true)
-    int countFollwers(@Param("userId") Long userId);
+    int countFollowers(@Param("userId") Long userId);
 
     // 팔로잉 수 ( 내가 팔로우 하는 사람 )
     @Query(value = "SELECT COUNT(*) " +

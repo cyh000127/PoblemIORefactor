@@ -29,7 +29,7 @@ public class GetUserProfileUseCase {
         // response.setPasswordHash(null); // 보안을 위해 비밀번호 해시 제거 (Setter 없음)
         
         // 3. 통계 정보 (JPA Count Query)
-        int followerCount = userRepository.countFollwers(userId);
+        int followerCount = userRepository.countFollowers(userId);
         int followingCount = userRepository.countFollowings(userId);
         
         response.setFollowingCount(followingCount);

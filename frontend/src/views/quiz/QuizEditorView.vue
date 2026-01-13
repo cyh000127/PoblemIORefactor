@@ -16,7 +16,7 @@
           :label="mode === 'create' ? '저장' : '수정 완료'"
           icon="pi pi-check"
           :loading="submitting"
-          :disabled="!isFormValid || thumbnailUploading || questionUploadingIndex !== null || isGenerating || isConfirming"
+          :disabled="!isFormValid || thumbnailUploading || questionUploadingIndex !== null"
           @click="handleSubmit"
         />
       </div>
@@ -102,41 +102,9 @@
               </div>
             </div>
 
-            <div class="ai-thumbnail-actions">
-              <Button
-                label="AI 추천 나만의 썸네일 생성"
-                icon="pi pi-sparkles"
-                severity="secondary"
-                outlined
-                class="ai-generate-button"
-                :loading="isGenerating"
-                :disabled="!canGenerateAiThumbnail || isGenerating || isConfirming"
-                @click="handleGenerateAiCandidates"
-              />
-              <small v-if="!canGenerateAiThumbnail" class="text-color-secondary ai-helper">제목/설명을 조금 더 입력하면 정확한 썸네일을 추천할 수 있어요.</small>
-              <small v-else-if="thumbnailPreview" class="text-color-secondary ai-helper">AI 적용 시 현재 썸네일이 교체됩니다.</small>
-            </div>
+            <!-- AI Thumbnail Section Removed -->
 
-            <div v-if="aiCandidates.length > 0" class="ai-candidate-panel">
-              <div class="ai-candidate-grid">
-                <button
-                  v-for="candidate in aiCandidates"
-                  :key="candidate.candidateId"
-                  type="button"
-                  class="ai-candidate-card"
-                  :class="{ selected: selectedCandidateId === candidate.candidateId }"
-                  @click="selectAiCandidate(candidate.candidateId)"
-                >
-                  <img :src="candidate.previewDataUrl" alt="AI thumbnail" />
-                  <span v-if="selectedCandidateId === candidate.candidateId" class="ai-selected-badge">선택됨</span>
-                </button>
-              </div>
-              <div class="ai-candidate-footer">
-                <Button label="다시 생성" icon="pi pi-refresh" severity="secondary" outlined :loading="isGenerating" :disabled="isConfirming" @click="handleGenerateAiCandidates" />
-                <Button label="이 썸네일 적용" icon="pi pi-check" :loading="isConfirming" :disabled="!selectedCandidateId || isGenerating" @click="applyAiCandidate" />
-              </div>
-            </div>
-          </div>
+
 
           <div class="flex justify-end gap-2 mt-4">
             <Button label="닫기" text @click="metaDialogVisible = false" />
@@ -190,7 +158,6 @@ import { useToast } from "primevue/usetoast";
 import { useConfirm } from "primevue/useconfirm";
 import { useQuizStore } from "@/stores/quiz";
 import { createQuiz, getQuiz, updateQuiz } from "@/api/quiz";
-import { createCandidates, confirmCandidate } from "@/api/aiThumbnail";
 import { uploadFile } from "@/api/file";
 import { resolveImageUrl } from "@/lib/image";
 
@@ -240,13 +207,6 @@ const loading = ref(false);
 const thumbnailDragOver = ref(false);
 const questionCardDragOverIndex = ref<number | null>(null);
 const questionDialogDragOver = ref(false);
-const aiCandidates = ref<{ candidateId: string; previewDataUrl: string }[]>([]);
-const selectedCandidateId = ref<string | null>(null);
-const isGenerating = ref(false);
-const isConfirming = ref(false);
-const aiTitleMin = 5;
-const aiDescriptionMin = 10;
-
 // 퀴즈 메타/문제 편집 모달
 const metaDialogVisible = ref(props.mode === "create");
 const questionDialogVisible = ref(false);
@@ -259,11 +219,7 @@ const thumbnailInputRef = ref<HTMLInputElement | null>(null);
 const quizForm = computed(() => quizStore.quizForm);
 const buildImageUrl = (path?: string) => resolveImageUrl(path);
 const thumbnailPreview = computed(() => buildImageUrl(quizForm.value.thumbnailUrl));
-const canGenerateAiThumbnail = computed(() => {
-  const titleLength = quizForm.value.title?.trim().length || 0;
-  const descriptionLength = quizForm.value.description?.trim().length || 0;
-  return titleLength >= aiTitleMin && descriptionLength >= aiDescriptionMin;
-});
+/* AI validation removed */
 
 // 모달 내에서 쓰는 questionForm
 const questionForm = reactive({
@@ -410,61 +366,11 @@ const handleThumbnailDrop = async (event: DragEvent) => {
 };
 
 // ==== AI 썸네일 후보 생성 ====
-const handleGenerateAiCandidates = async () => {
-  if (!canGenerateAiThumbnail.value || isGenerating.value) return;
+/* AI Handlers Removed */
 
-  isGenerating.value = true;
-  try {
-    const data = await createCandidates(quizForm.value.title?.trim() || "", quizForm.value.description?.trim() || "");
-    aiCandidates.value = data?.candidates || [];
-    selectedCandidateId.value = null;
-  } catch (error: any) {
-    toast.add({
-      severity: "error",
-      summary: "오류",
-      detail: "생성에 실패했습니다. 잠시 후 다시 시도해 주세요.",
-      life: 3000,
-    });
-  } finally {
-    isGenerating.value = false;
-  }
-};
 
-const selectAiCandidate = (candidateId: string) => {
-  selectedCandidateId.value = candidateId;
-};
 
-const applyAiCandidate = async () => {
-  if (!selectedCandidateId.value || isConfirming.value) return;
 
-  isConfirming.value = true;
-  try {
-    const data = await confirmCandidate(selectedCandidateId.value);
-    quizForm.value.thumbnailUrl = data?.thumbnailUrl || "";
-    toast.add({
-      severity: "success",
-      summary: "성공",
-      detail: "AI 썸네일이 적용되었습니다.",
-      life: 2000,
-    });
-  } catch (error: any) {
-    toast.add({
-      severity: "error",
-      summary: "오류",
-      detail: "적용에 실패했습니다. 다시 시도해 주세요.",
-      life: 3000,
-    });
-  } finally {
-    isConfirming.value = false;
-  }
-};
-
-const resetAiState = () => {
-  aiCandidates.value = [];
-  selectedCandidateId.value = null;
-  isGenerating.value = false;
-  isConfirming.value = false;
-};
 
 // ==== 문제 카드/이미지/모달 ====
 const handleAddQuestionClick = () => {
@@ -643,15 +549,7 @@ const handleSubmit = async () => {
     return;
   }
 
-  if (isGenerating.value || isConfirming.value) {
-    toast.add({
-      severity: "warn",
-      summary: "Generating thumbnails",
-      detail: "AI 썸네일 작업이 완료될 때까지 기다려주세요.",
-      life: 2500,
-    });
-    return;
-  }
+
 
   if (!isFormValid.value) {
     toast.add({
@@ -687,11 +585,21 @@ const handleSubmit = async () => {
       router.push(`/quiz/${props.quizId}`);
     }
   } catch (error: any) {
+    // 상세 에러 메시지 처리 (Validation Error 등)
+    let detailMsg = error.response?.data?.message;
+    
+    // 만약 백엔드에서 errors 배열을 내려준다면 (Spring Validation 기본 응답 구조에 따라 다를 수 있음)
+    // 예: { message: "Validation failed", errors: [ { field: "thumbnailUrl", defaultMessage: "..." } ... ] }
+    if (error.response?.data?.errors && Array.isArray(error.response.data.errors)) {
+       const fieldErrors = error.response.data.errors.map((e: any) => e.defaultMessage).join(", ");
+       detailMsg = fieldErrors || detailMsg;
+    }
+
     toast.add({
       severity: "error",
       summary: "오류",
-      detail: error.response?.data?.message || (props.mode === "create" ? "퀴즈 생성에 실패했습니다." : "퀴즈 수정에 실패했습니다."),
-      life: 3000,
+      detail: detailMsg || (props.mode === "create" ? "퀴즈 생성에 실패했습니다." : "퀴즈 수정에 실패했습니다."),
+      life: 5000,
     });
   } finally {
     submitting.value = false;
@@ -702,7 +610,6 @@ const handleSubmit = async () => {
 onMounted(() => {
   if (props.mode === "create") {
     quizStore.resetQuizForm();
-    resetAiState();
   } else if (props.mode === "edit") {
     loadQuiz();
   }
@@ -947,89 +854,7 @@ onMounted(() => {
   color: var(--primary);
 }
 
-.ai-thumbnail-actions {
-  margin-top: 0.75rem;
-  display: flex;
-  flex-direction: column;
-  gap: 0.4rem;
-}
 
-.ai-helper {
-  font-size: 0.8rem;
-}
-
-.ai-candidate-panel {
-  margin-top: 0.9rem;
-  padding: 0.75rem;
-  border-radius: 12px;
-  border: 1px solid var(--color-border);
-  background: var(--color-background-mute);
-}
-
-.ai-candidate-grid {
-  display: grid;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
-  gap: 0.6rem;
-}
-
-.ai-candidate-card {
-  position: relative;
-  border: 2px solid transparent;
-  border-radius: 12px;
-  overflow: hidden;
-  background: #111;
-  cursor: pointer;
-  padding: 0;
-  transition: border-color 0.15s ease, transform 0.15s ease;
-}
-
-.ai-candidate-card img {
-  width: 100%;
-  height: 120px;
-  object-fit: cover;
-  display: block;
-}
-
-.ai-candidate-card:hover {
-  transform: translateY(-2px);
-  border-color: var(--color-border-hover);
-}
-
-.ai-candidate-card.selected {
-  border-color: var(--primary);
-}
-
-.ai-selected-badge {
-  position: absolute;
-  top: 8px;
-  right: 8px;
-  background: var(--primary);
-  color: #fff;
-  font-size: 0.7rem;
-  padding: 2px 6px;
-  border-radius: 999px;
-}
-
-.ai-candidate-footer {
-  margin-top: 0.75rem;
-  display: flex;
-  justify-content: flex-end;
-  gap: 0.5rem;
-}
-
-:deep(.ai-generate-button.p-button) {
-  transition: background-color 0.15s ease, border-color 0.15s ease, color 0.15s ease;
-}
-
-:global([data-theme="dark"] :deep(.ai-generate-button.p-button:hover)) {
-  background: rgba(39, 181, 207, 0.18) !important;
-  border-color: rgba(39, 181, 207, 0.5) !important;
-  color: #aeddeb !important;
-}
-
-:global([data-theme="dark"] :deep(.ai-generate-button.p-button:enabled:focus-visible)) {
-  box-shadow: 0 0 0 2px rgba(39, 181, 207, 0.35) !important;
-}
 
 /* 문제 편집 모달 */
 .question-image-preview {

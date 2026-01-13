@@ -21,7 +21,7 @@ public class GetUserPopoverUseCase {
         User user = userRepository.findByIdAndIsDeleted(userId, DeleteStatus.ACTIVE)
                 .orElseThrow(() -> new BusinessException(ErrorCode.USER_NOT_FOUND));
 
-        int followerCount = userRepository.countFollwers(userId);
+        int followerCount = userRepository.countFollowers(userId);
         int followingCount = userRepository.countFollowings(userId);
 
         boolean isFollowing = false;

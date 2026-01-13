@@ -62,6 +62,7 @@ mybatis:
 jwt:
   secret: ${JWT_SECRET} # 기본값(Base64)
   expiration: 3600000 # 1시간
+  cookie-secure: ${JWT_COOKIE_SECURE:false}
 
 # 로깅 레벨 설정
 logging:
@@ -69,10 +70,7 @@ logging:
     root: info
     com.problemio: debug
 
-gms:
-  base-url: https://gms.ssafy.io/gmsapi/generativelanguage.googleapis.com/v1beta/models
-  api-key: ${GMS_KEY}
-  model: ${GMS_MODEL:gemini-2.0-flash-exp-image-generation}
+
 
 # 파일 업로드 설정
 file:

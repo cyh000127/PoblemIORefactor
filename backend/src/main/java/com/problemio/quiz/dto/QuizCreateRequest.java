@@ -18,7 +18,6 @@ public class QuizCreateRequest {
     @NotBlank
     private String description;
 
-    @NotBlank
     private String thumbnailUrl;
 
     // 문제 공개 여부

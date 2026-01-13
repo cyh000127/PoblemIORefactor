@@ -101,7 +101,12 @@ public class QuizServiceImpl implements QuizService {
         quiz.setUserId(userId);
         quiz.setTitle(request.getTitle());
         quiz.setDescription(request.getDescription());
-        quiz.setThumbnailUrl(request.getThumbnailUrl());
+        if (request.getThumbnailUrl() != null && !request.getThumbnailUrl().isBlank()) {
+            quiz.setThumbnailUrl(request.getThumbnailUrl());
+        } else if (request.getQuestions() != null && !request.getQuestions().isEmpty()) {
+            // 썸네일 없으면 첫 문제 이미지 사용
+            quiz.setThumbnailUrl(request.getQuestions().get(0).getImageUrl());
+        }
         quiz.setPublic(request.isPublic());
         quiz.setLikeCount(0);
         quiz.setPlayCount(0);

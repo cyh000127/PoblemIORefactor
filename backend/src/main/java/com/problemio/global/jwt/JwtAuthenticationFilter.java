@@ -27,11 +27,17 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
 
         // Request Header에서 토큰 추출
         String token = resolveToken(request);
+        
+        if (token != null) {
+            System.out.println("DEBUG: JwtFilter - Token found: " + token.substring(0, Math.min(10, token.length())) + "...");
+        }
 
         // 토큰 유효성 검사
         if (token != null
                 && jwtTokenProvider.validateToken(token)
                 && SecurityContextHolder.getContext().getAuthentication() == null) {
+            
+            System.out.println("DEBUG: JwtFilter - Token valid, setting authentication.");
 
             // 토큰에서 이메일 추출
             String email = jwtTokenProvider.getEmail(token);
@@ -50,6 +56,8 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
                     new UsernamePasswordAuthenticationToken(userDetails, null, userDetails.getAuthorities());
 
             SecurityContextHolder.getContext().setAuthentication(authentication);
+        } else if (token != null) {
+             System.out.println("DEBUG: JwtFilter - Token invalid or authentication already set.");
         }
 
         // 다음 필터로 넘기기

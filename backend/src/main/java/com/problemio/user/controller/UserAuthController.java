@@ -14,6 +14,7 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.beans.factory.annotation.Value;
 
 @RestController
 @RequestMapping("/api/auth")
@@ -21,6 +22,9 @@ import org.springframework.web.bind.annotation.*;
 public class UserAuthController {
 
     private final UserAuthService userAuthService;
+
+    @Value("${jwt.cookie-secure}")
+    private boolean cookieSecure;
 
 
     //회원 가입
@@ -30,14 +34,15 @@ public class UserAuthController {
                 .body(ApiResponse.success(userAuthService.signup(request)));
     }
 
-    // 로그인
     @PostMapping("/login")
     public ResponseEntity<ApiResponse<TokenResponse>> login(@RequestBody @Valid UserLoginRequest request) {
+        System.out.println("DEBUG: Login requested for email: " + request.getEmail());
         TokenResponse tokens = userAuthService.login(request);
+        System.out.println("DEBUG: Login successful, tokens generated.");
 
         ResponseCookie refreshCookie = ResponseCookie.from("refreshToken", tokens.getRefreshToken())
                 .httpOnly(true)
-                .secure(true) // HTTPS 배포 환경이므로 true로 설정
+                .secure(cookieSecure) // 설정값에 따라 Secure 적용
                 .sameSite("Lax")
                 .path("/api/auth")
                 .maxAge(14 * 24 * 60 * 60) // 14일
@@ -63,7 +68,7 @@ public class UserAuthController {
 
         ResponseCookie clearCookie = ResponseCookie.from("refreshToken", "")
                 .httpOnly(true)
-                .secure(true) // HTTPS 배포 환경이므로 true로 설정
+                .secure(cookieSecure) // 설정값에 따라 Secure 적용
                 .sameSite("Lax")
                 .path("/api/auth")
                 .maxAge(0)
@@ -83,7 +88,7 @@ public class UserAuthController {
         // refreshToken 재설정 (만료 임박 대비)
         ResponseCookie refreshCookie = ResponseCookie.from("refreshToken", tokens.getRefreshToken())
                 .httpOnly(true)
-                .secure(true) // HTTPS 배포 환경이므로 true로 설정
+                .secure(cookieSecure) // 설정값에 따라 Secure 적용
                 .sameSite("Lax")
                 .path("/api/auth")
                 .maxAge(14 * 24 * 60 * 60)

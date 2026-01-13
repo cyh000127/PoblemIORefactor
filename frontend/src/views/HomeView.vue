@@ -5,7 +5,7 @@
       <div class="home-search-row">
         <div class="search-bar-wide w-full">
           <Button class="search-filter-btn" icon="pi pi-filter" rounded text @click="toggleFilterPanel($event)"></Button>
-          <OverlayPanel ref="filterPanel">
+          <Popover ref="filterPanel">
             <div class="search-filter-menu">
               <div
                 v-for="opt in filterOptions"
@@ -18,7 +18,7 @@
                 <span>{{ opt.label }}</span>
               </div>
             </div>
-          </OverlayPanel>
+          </Popover>
 
           <span class="p-input-icon-right search-input-wrapper">
             <InputText
@@ -136,7 +136,7 @@ import { ref, onMounted, watch } from "vue";
 import { useRouter } from "vue-router";
 import { useToast } from "primevue/usetoast";
 import { getQuizzes } from "@/api/quiz";
-import OverlayPanel from "primevue/overlaypanel";
+import Popover from "primevue/popover";
 import LiveRankingWidget from "@/components/LiveRankingWidget.vue";
 import HomeChallengeWidget from "@/components/challenge/HomeChallengeWidget.vue";
 import Paginator from "primevue/paginator";
