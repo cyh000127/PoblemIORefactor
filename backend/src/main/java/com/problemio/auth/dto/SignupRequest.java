@@ -1,4 +1,4 @@
-package com.problemio.user.dto;
+package com.problemio.auth.dto;
 
 import jakarta.validation.constraints.Email;
 import jakarta.validation.constraints.NotBlank;
@@ -9,7 +9,7 @@ import lombok.Setter;
 
 @Getter
 @Setter
-public class UserSignupRequest {
+public class SignupRequest {
 
     @NotBlank
     @Email

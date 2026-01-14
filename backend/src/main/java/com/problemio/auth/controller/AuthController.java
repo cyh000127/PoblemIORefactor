@@ -1,11 +1,11 @@
-package com.problemio.user.controller;
+package com.problemio.auth.controller;
 
 import com.problemio.global.common.ApiResponse;
-import com.problemio.user.dto.TokenResponse;
-import com.problemio.user.dto.UserLoginRequest;
+import com.problemio.auth.dto.TokenResponse;
+import com.problemio.auth.dto.LoginRequest;
 import com.problemio.user.dto.UserResponse;
-import com.problemio.user.dto.UserSignupRequest;
-import com.problemio.user.service.UserAuthService;
+import com.problemio.auth.dto.SignupRequest;
+import com.problemio.auth.service.AuthService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
@@ -19,36 +19,33 @@ import org.springframework.beans.factory.annotation.Value;
 @RestController
 @RequestMapping("/api/auth")
 @RequiredArgsConstructor
-public class UserAuthController {
+public class AuthController {
 
-    private final UserAuthService userAuthService;
+    private final AuthService authService;
+
 
     @Value("${jwt.cookie-secure}")
     private boolean cookieSecure;
 
-
     //회원 가입
     @PostMapping("/signup")
-    public ResponseEntity<ApiResponse<UserResponse>> signup(@RequestBody @Valid UserSignupRequest request) {
+    public ResponseEntity<ApiResponse<UserResponse>> signup(@RequestBody @Valid SignupRequest request) {
         return ResponseEntity.status(HttpStatus.CREATED)
-                .body(ApiResponse.success(userAuthService.signup(request)));
+                .body(ApiResponse.success(authService.signup(request)));
     }
 
     @PostMapping("/login")
-    public ResponseEntity<ApiResponse<TokenResponse>> login(@RequestBody @Valid UserLoginRequest request) {
-        System.out.println("DEBUG: Login requested for email: " + request.getEmail());
-        TokenResponse tokens = userAuthService.login(request);
-        System.out.println("DEBUG: Login successful, tokens generated.");
+    public ResponseEntity<ApiResponse<TokenResponse>> login(@RequestBody @Valid LoginRequest request) {
+        TokenResponse tokens = authService.login(request);
 
         ResponseCookie refreshCookie = ResponseCookie.from("refreshToken", tokens.getRefreshToken())
                 .httpOnly(true)
-                .secure(cookieSecure) // 설정값에 따라 Secure 적용
+                .secure(cookieSecure)
                 .sameSite("Lax")
                 .path("/api/auth")
                 .maxAge(14 * 24 * 60 * 60) // 14일
                 .build();
 
-        // accessToken만 body로 사용
         TokenResponse body = TokenResponse.builder()
                 .accessToken(tokens.getAccessToken())
                 .build();
@@ -58,17 +55,15 @@ public class UserAuthController {
                 .body(ApiResponse.success(body));
     }
 
-
-    // 로그아웃
     @PostMapping("/logout")
     public ResponseEntity<ApiResponse<Void>> logout(@AuthenticationPrincipal UserDetails userDetails) {
         if (userDetails != null) {
-            userAuthService.logout(userDetails.getUsername());
+            authService.logout(userDetails.getUsername());
         }
 
         ResponseCookie clearCookie = ResponseCookie.from("refreshToken", "")
                 .httpOnly(true)
-                .secure(cookieSecure) // 설정값에 따라 Secure 적용
+                .secure(cookieSecure)
                 .sameSite("Lax")
                 .path("/api/auth")
                 .maxAge(0)
@@ -79,16 +74,13 @@ public class UserAuthController {
                 .body(ApiResponse.success(null));
     }
 
-    // 토큰 재발급
     @PostMapping("/reissue")
     public ResponseEntity<ApiResponse<TokenResponse>> reissue(@CookieValue(value = "refreshToken", required = false) String refreshToken) {
-        System.out.println("DEBUG: Reissue requested. RefreshToken: " + (refreshToken == null ? "NULL" : refreshToken.substring(0, Math.min(10, refreshToken.length())) + "..."));
-        TokenResponse tokens = userAuthService.reissue(refreshToken);
+        TokenResponse tokens = authService.reissue(refreshToken);
 
-        // refreshToken 재설정 (만료 임박 대비)
         ResponseCookie refreshCookie = ResponseCookie.from("refreshToken", tokens.getRefreshToken())
                 .httpOnly(true)
-                .secure(cookieSecure) // 설정값에 따라 Secure 적용
+                .secure(cookieSecure)
                 .sameSite("Lax")
                 .path("/api/auth")
                 .maxAge(14 * 24 * 60 * 60)

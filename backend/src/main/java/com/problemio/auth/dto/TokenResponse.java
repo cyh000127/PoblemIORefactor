@@ -1,4 +1,4 @@
-package com.problemio.user.dto;
+package com.problemio.auth.dto;
 
 import lombok.AllArgsConstructor;
 import lombok.Builder;

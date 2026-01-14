@@ -8,6 +8,7 @@ export const useQuizStore = defineStore('quiz', () => {
     title: '',
     description: '',
     thumbnailUrl: '',
+    isPublic: true,
     questions: [],
   })
 
@@ -53,6 +54,7 @@ export const useQuizStore = defineStore('quiz', () => {
       title: '',
       description: '',
       thumbnailUrl: '',
+      isPublic: true,
       questions: [],
     }
   }

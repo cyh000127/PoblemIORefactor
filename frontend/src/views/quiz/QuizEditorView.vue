@@ -102,6 +102,15 @@
               </div>
             </div>
 
+            </div>
+
+             <div class="field mt-4">
+                <div class="flex align-items-center">
+                    <Checkbox v-model="quizForm.isPublic" :binary="true" inputId="isPublic" />
+                    <label for="isPublic" class="ml-2 cursor-pointer select-none">공개 (체크 해제 시 나만 볼 수 있습니다)</label>
+                </div>
+            </div>
+
             <!-- AI Thumbnail Section Removed -->
 
 
@@ -288,6 +297,7 @@ const loadQuiz = async () => {
     quizForm.value.title = quiz.title;
     quizForm.value.description = quiz.description;
     quizForm.value.thumbnailUrl = quiz.thumbnailUrl;
+    quizForm.value.isPublic = quiz.isPublic;
     quizForm.value.questions = quiz.questions.map((q: any) => ({
       id: q.id,
       questionOrder: q.order,

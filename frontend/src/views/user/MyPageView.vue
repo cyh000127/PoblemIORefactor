@@ -33,7 +33,11 @@
           <div v-for="quiz in myQuizzes" :key="quiz.id" class="quiz-card cursor-pointer" @click="goToQuiz(quiz.id)">
             <div class="quiz-thumbnail">
               <img :src="quiz.thumbnailUrl || '/placeholder.svg'" :alt="quiz.title" class="quiz-thumbnail-img" />
-              <div v-if="quiz.hidden" class="hidden-badge">
+              <div v-if="!quiz.isPublic" class="hidden-badge">
+                <i class="pi pi-lock mr-1"></i>
+                비공개
+              </div>
+              <div v-else-if="quiz.hidden" class="hidden-badge">
                 <i class="pi pi-eye-slash mr-1"></i>
                 숨김 처리됨
               </div>

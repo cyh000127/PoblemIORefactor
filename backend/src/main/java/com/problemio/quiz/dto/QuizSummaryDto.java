@@ -24,5 +24,6 @@ public class QuizSummaryDto {
     private int playCount;
     private Integer commentCount;
     private boolean hidden;
+    private boolean isPublic;
 
 }

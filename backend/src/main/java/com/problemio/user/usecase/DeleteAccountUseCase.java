@@ -12,7 +12,7 @@ import com.problemio.quiz.mapper.QuizMapper;
 import com.problemio.quiz.service.QuizService;
 import com.problemio.user.domain.DeleteStatus;
 import com.problemio.user.domain.User;
-import com.problemio.user.mapper.RefreshTokenMapper;
+import com.problemio.auth.repository.RefreshTokenRepository;
 import com.problemio.user.repository.UserRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.cache.Cache;
@@ -30,7 +30,7 @@ import java.util.UUID;
 public class DeleteAccountUseCase {
 
     private final UserRepository userRepository;
-    private final RefreshTokenMapper refreshTokenMapper;
+    private final RefreshTokenRepository refreshTokenRepository;
     private final FollowMapper followMapper;
     private final QuizLikeMapper quizLikeMapper;
     private final QuizMapper quizMapper;
@@ -47,9 +47,8 @@ public class DeleteAccountUseCase {
         if (!passwordEncoder.matches(password, user.getPasswordHash())) {
             throw new BusinessException(ErrorCode.INVALID_LOGIN);
         }
-
-        // 1. 연관 데이터 삭제 (기존 Mapper 사용하여 기능 유지)
-        refreshTokenMapper.deleteByUserId(userId);
+        // 1. 연관 데이터 삭제 (기존기능 유지, JPA 리포지토리 사용)
+        refreshTokenRepository.deleteByUser_Id(userId);
         followMapper.deleteByUserId(userId);
 
         List<Long> likedQuizIds = quizLikeMapper.findQuizIdsByUserId(userId);
@@ -82,7 +81,7 @@ public class DeleteAccountUseCase {
         user.anonymize(tombstone + "@deleted.local", tombstone);
         user.delete();
         
-        // 참고: JPA Dirty checking으로 인해 업데이트 쿼리가 자동 실행됩니다.
+        // 참고: JPA 변경 감지(Dirty checking)로 인해 업데이트 쿼리가 자동으로 실행됩니다.
     }
 
     private void evictUserCaches(String email, Long userId) {

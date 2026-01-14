@@ -13,6 +13,7 @@ import org.springframework.transaction.annotation.Transactional;
 
 @Service
 @RequiredArgsConstructor
+@Transactional(readOnly = true)
 public class ChangePasswordUseCase {
 
     private final UserRepository userRepository;
@@ -29,11 +30,5 @@ public class ChangePasswordUseCase {
 
         String encodedPassword = passwordEncoder.encode(newPassword);
         user.updatePassword(encodedPassword);
-        // Note: updatedAt is automatically handled by @LastModifiedDate if enabled, 
-        // or we can set it explicitly if the entity allows.
-        // The original code passed TimeUtils.now() to MyBatis mapper.
-        // Assuming JPA Audit handles it, or if User entity has helper method.
-        // Checking User.java again... it has @LastModifiedDate but also a updatePassword method.
-        // User.java's updatePassword only sets passwordHash.
     }
 }
